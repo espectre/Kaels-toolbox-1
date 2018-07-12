@@ -146,7 +146,7 @@ def main():
     elif cfg.SCRATCH:
         begin_epoch = 0
         network = import_module('symbols.'+cfg.SCR.NETWORK)
-        symbol = network.get_symbol(num_classes, cfg.SCR.NUM_LAYERS, cfg.INPUT_SHAPE, **kwargs) 
+        symbol = network.get_symbol(num_classes, cfg.SCR.NUM_LAYERS, cfg.INPUT_SHAPE, **cfg) 
         arg_params, aux_params = None, None
     else:
         logger.error("Please at least choose one training mode: scratch, finetune or resume")

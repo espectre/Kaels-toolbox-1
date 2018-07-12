@@ -13,6 +13,7 @@ Updated by Lin Xiong Jul-21, 2017
 Added Squeeze-and-Excitation block by Lin Xiong Sep-13, 2017
 '''
 import mxnet as mx
+from config import cfg
 
 def residual_unit(data, num_filter, ratio, stride, dim_match, name, num_group, bottle_neck=True,  bn_mom=0.9, workspace=256, memonger=False):
     """Return ResNext Unit symbol for building ResNext
@@ -167,8 +168,9 @@ def get_symbol(num_classes, num_layers, image_shape, conv_workspace=256, **kwarg
     Adapted from https://github.com/tornadomeet/ResNet/blob/master/train_resnet.py
     Original author Wei Wu
     """
-    image_shape = [int(l) for l in image_shape.split(',')]
-    (nchannel, height, width) = image_shape
+    # image_shape = [int(l) for l in image_shape.split(',')]
+    # image_shape = cfg.TRAIN.INPUT_SHAPE
+    nchannel, height, width = image_shape
     if height <= 28:
         num_stages = 3
         if (num_layers-2) % 9 == 0 and num_layers >= 164:
@@ -212,7 +214,7 @@ def get_symbol(num_classes, num_layers, image_shape, conv_workspace=256, **kwarg
                    filter_list = filter_list,
                    ratio_list  = [0.25, 0.125, 0.0625, 0.03125],
                    num_class   = num_classes,
-                   num_group   = int(kwargs['--num-groups']),
+                   num_group   = cfg.TRAIN.SCR.X_NUM_GROUPS, 
                    # image_shape = image_shape,
                    drop_out    = 0.0,
                    bottle_neck = bottle_neck,
