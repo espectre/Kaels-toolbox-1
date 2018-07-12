@@ -125,11 +125,11 @@ def main():
                 raise input_syntax_err
             
     with open(args['<out-list>'], 'w') as f:
-        for image,label in file_lst:
+        # for image,label in file_lst:
+        for image in file_lst:
             if len(image.strip().split()) == 2:
                 pre_label = image.strip().split()[1]
-            temp_dict = generate_dict(image.split()[0], args['--prefix'], args['--classification'],
-                                      args['--detection'], args['--clustering'], sub_task, pre_ann, pre_label=label)
+            temp_dict = generate_dict(image.split()[0], args['--prefix'], args['--classification'], args['--detection'], args['--clustering'], sub_task, pre_ann, pre_label=pre_label)
             f.write('{}\n'.format(json.dumps(temp_dict)))
 
 
