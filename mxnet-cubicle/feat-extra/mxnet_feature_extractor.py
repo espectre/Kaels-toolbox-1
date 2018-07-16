@@ -13,15 +13,15 @@ import numpy as np
 import docopt
 
 
-def net_init(model_prefix,model_epoch,gpu=0,output_layer='flatten0_output',batch_size=1,image_width=224):
+def net_init(model_prefix,model_epoch,gpu=0,feature_layers=['flatten0_output'],batch_size=1,image_width=224):
     '''
     initialize mxnet model
     '''
     # get compute graph
     sym, arg_params, aux_params = mx.model.load_checkpoint(model_prefix, model_epoch)   # load original model
-    output_layer = sym.get_internals()['flatten0_output']
+    output_layers = mx.sym.Group([sym.get_internals()[x] for x in feature_layers])
     # bind module with graph
-    model = mx.mod.Module(symbol=output_layer, context=mx.gpu(gpu), label_names=None)
+    model = mx.mod.Module(symbol=output_layers, context=mx.gpu(gpu), label_names=None)
     model.bind(for_training=False, data_shapes=[('data', (batch_size, 3, image_width, image_width))], label_shapes=model._label_shapes)
 
     # load model parameters
@@ -48,34 +48,59 @@ def extra_feature(model, image_path):
     img_batch[0] = mx.nd.array(img)
     
     model.forward(Batch([img_batch]))
-    output = model.get_outputs()[0].asnumpy()
-    # print('output.shape:',output.shape)
+    # output = model.get_outputs()[0].asnumpy()
+    _output = [x.asnumpy() for x in model.get_outputs()]
+    output = list()
+    for op in _output:
+        assert len(op.shape) > 1, 'output shape error!'
+        # print(op.shape)
+        if len(op.shape) > 2:
+            output.append(np.mean(op,axis=(2,3)))
+        else:
+            output.append(op)
+    # print('len(output):',len(output))
+    # print('output.shape:',output[0].shape,output[1].shape)
     return output
 
 def main():
     '''
-    :inputs: /path/to/model/prefix epoch /path/to/images.lst /path/to/result.npy /path/to/image/prefix
+    :inputs: /path/to/model/prefix epoch /path/to/images.lst /path/to/prefix/of/result.npy /path/to/image/prefix
     '''
     # root_path = './test-images/'
     root_path = sys.argv[5] 
     with open(sys.argv[3],'r') as f:
         images = [os.path.join(root_path,x.strip()) for x in f.readlines()]
     image_number = len(images)
-    feature = np.zeros((image_number,2048))
-    model = net_init(sys.argv[1],int(sys.argv[2]),gpu=7)
+    # feature_dim = 3
+    # feature_dim_1 = [64,112,112]
+    # feature_dim_2 = [256,56,56]
+    # feature_dim_3 = [512,28,28]
+    feature_dim_4 = [1024]    # 1024,14,14 
+    feature_dim_5 = [2048]    # 2048,7,7
+    # feature_dim_6 = [2048]
+    feature_dims = [[image_number], [image_number]]
+    feature_dims[0].extend(feature_dim_4)
+    feature_dims[1].extend(feature_dim_5)
+    features = [np.zeros([x for x in y]) for y in feature_dims]
+    feature_layers = ['_plus12_output','flatten0_output']
+    # model = net_init(sys.argv[1],int(sys.argv[2]),gpu=7)
+    model = net_init(sys.argv[1],int(sys.argv[2]),gpu=7,feature_layers=feature_layers)
+    # model = net_init(sys.argv[1],int(sys.argv[2]),gpu=7,feature_layers=['fc-3_output'])
     tic_0 = time.time()
     for i in xrange(image_number):
-	tic = time.time()
+        tic = time.time()
         output = extra_feature(model, images[i])
         print('Batch [{}]: {:.4f}s'.format(i, time.time()-tic))
-        if np.shape(output) != tuple():
-            feature[i] = output
+        for j in xrange(len(features)):
+            if np.shape(output[j]) != tuple():
+                features[j][i] = output[j]
     print('Total time: {:.4f}s'.format(time.time()-tic_0))
-    try:
-        np.save(sys.argv[4], feature)
-    except:
-        np.save('./tmp.npy', feature)
-        print('Saving failed, result file saved to ./tmp.npy')
+    for idx,feat in enumerate(features): 
+        try:
+            np.save(sys.argv[4]+'_{}.npy'.format(feature_layers[idx]), feat)
+        except:
+            np.save('./tmp_{}.npy'.format(feature_layers[idx]), feat)
+            print('Saving failed, result file saved to ./tmp.npy')
     print('...done')
     # print('==> Original params:')
     # pprint.pprint(zip(sym.list_arguments(), sym.infer_shape(data=(1, 3, 224, 224))[0]))

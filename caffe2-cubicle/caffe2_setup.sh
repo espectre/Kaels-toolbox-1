@@ -53,11 +53,15 @@ pip install \
 # rm cudnn-8.0-linux-x64-v5.1.tgz && sudo ldconfig
 
 # ---- build ----
+# caffe2 has been merged into pytorch repo, and installation changed a lot
 echo '==> clone and build...' 
 cd /opt/
 # Clone Caffe2's source code from our Github repository
-git clone --recursive https://github.com/caffe2/caffe2.git caffe2 
-cd caffe2
+# [deprecated] git clone --recursive https://github.com/caffe2/caffe2.git caffe2 
+# [deprecated] cd caffe2
+git clone --recursive https://github.com/pytorch/pytorch.git
+cd pytorch
+git submodule update --init
 # Create a directory to put Caffe2's build files in
 mkdir build
 cd build

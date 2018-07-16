@@ -11,6 +11,8 @@
 from __future__ import print_function
 import sys
 import os
+import cv2
+import numpy as np
 import json
 import pprint
 
@@ -19,6 +21,8 @@ sys.path.append(os.path.join(cur_path,'../lib'))
 from openimage import load_categories,load_annotations
 from image import get_image_size_core,check_bounding_box
 
+KILL_INVALID_BOX = True # set to skip invalid box
+OPENCV_CHECK = False    # set to check image by cv2.imread, extremely slow
 
 def main():
     '''
@@ -62,11 +66,23 @@ def main():
         # tmp['id'] = item['ImageIndex']
         tmp['file_name'] = item['ImageID'] + ext 
         tmp_img_path = os.path.join(img_path, tmp['file_name'])
-        try:
-            width, height = get_image_size_core(tmp_img_path) 
-        except:
-            print('Error image:',tmp_img_path)
-            continue    
+        if OPENCV_CHECK:
+            try:
+                _img_read = cv2.imread(tmp_img_path)
+                print(os.path.basename(tmp_img_path))
+                if np.shape(_img_read) == tuple():
+                    print('Error image:',tmp_img_path)
+                    continue    
+                height, width, _channel = _img_read.shape
+            except:
+                print('Error image:',tmp_img_path)
+                continue    
+        else:
+            try:
+                width, height = get_image_size_core(tmp_img_path) 
+            except:
+                print('Error image:',tmp_img_path)
+                continue    
         if width not in resize and height not in resize:
             # print('warning: image size may be wrong, {}, w{}, h{}'.format(tmp['id'],width,height))
             out_of_size_lst.append((item['ImageID'],width,height))
@@ -94,6 +110,8 @@ def main():
         check = check_bounding_box(tmp['bbox'], width, height, item['ImageID'])
         if check:    # catch box
             err_lst.append((item['ImageID'],width,height,tmp['id'],tmp['bbox']))
+            if KILL_INVALID_BOX:
+                continue
         tmp['iscrowd'] = 0 
         result['annotations'].append(tmp)
         
