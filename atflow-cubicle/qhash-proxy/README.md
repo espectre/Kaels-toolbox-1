@@ -18,17 +18,17 @@
 
 > update 2018-05-23 
 
-* [linux](http://p4ukyt7s7.bkt.clouddn.com/qhash_proxy/v1.2/qhash_proxy_linux)
+* [linux](http://pbmt9e0id.bkt.clouddn.com/qhash_proxy/qhash_proxy_linux_v1.2)
 
-* [osx](http://p4ukyt7s7.bkt.clouddn.com/qhash_proxy/v1.2/qhash_proxy_mac)
+* [mac](http://pbmt9e0id.bkt.clouddn.com/qhash_proxy/qhash_proxy_mac_v1.2)
 
 #### v1.0 
 
 > update 2018-03-20
 
-* [linux](http://p4ukyt7s7.bkt.clouddn.com/qhash_proxy/v1.0/qhash_proxy_linux)
+* [linux](http://pbmt9e0id.bkt.clouddn.com/qhash_proxy/qhash_proxy_linux_v1.0)
 
-* [osx](http://p4ukyt7s7.bkt.clouddn.com/qhash_proxy/v1.0/qhash_proxy_mac)
+* [mac](http://pbmt9e0id.bkt.clouddn.com/qhash_proxy/qhash_proxy_mac_v1.0)
 
 ### rock 'n roll
 

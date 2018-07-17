@@ -18,25 +18,25 @@
 
 > update 2018-05-23
 
-* [linux](http://p4ukyt7s7.bkt.clouddn.com/log_proxy/v1.2/log_proxy_linux)
+* [linux](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_linux_v1.2)
 
-* [mac](http://p4ukyt7s7.bkt.clouddn.com/log_proxy/v1.2/log_proxy_mac)
+* [mac](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_mac_v1.2)
 
 #### v1.1 
 
 > update 2018-04-02
 
-* [linux](http://p4ukyt7s7.bkt.clouddn.com/log_proxy/v1.1/log_proxy_linux)
+* [linux](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_linux_v1.1)
 
-* [mac](http://p4ukyt7s7.bkt.clouddn.com/log_proxy/v1.1/log_proxy_mac)
+* [mac](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_mac_v1.1)
 
 #### v1.0 
 
 > update 2018-02-28
 
-* [linux](http://p4ukyt7s7.bkt.clouddn.com/log_proxy/v1.0/log_proxy_linux)
+* [linux](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_linux_v1.0)
 
-* [mac](http://p4ukyt7s7.bkt.clouddn.com/log_proxy/v1.0/log_proxy_mac)
+* [mac](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_mac_v1.0)
 
 ### rock 'n roll
 
