@@ -75,14 +75,17 @@ def main():
     # feature_dim_1 = [64,112,112]
     # feature_dim_2 = [256,56,56]
     # feature_dim_3 = [512,28,28]
-    feature_dim_4 = [1024]    # 1024,14,14 
-    feature_dim_5 = [2048]    # 2048,7,7
-    # feature_dim_6 = [2048]
-    feature_dims = [[image_number], [image_number]]
-    feature_dims[0].extend(feature_dim_4)
-    feature_dims[1].extend(feature_dim_5)
+    # feature_dim_4 = [1024]    # 1024,14,14 
+    # feature_dim_5 = [2048]    # 2048,7,7
+    feature_dim_6 = [2048]
+    feature_dims = [[image_number]]
+    feature_dims[0].extend(feature_dim_6)
+    # feature_dims = [[image_number], [image_number]]
+    # feature_dims[0].extend(feature_dim_4)
+    # feature_dims[1].extend(feature_dim_5)
     features = [np.zeros([x for x in y]) for y in feature_dims]
-    feature_layers = ['_plus12_output','flatten0_output']
+    # feature_layers = ['_plus12_output','flatten0_output']
+    feature_layers = ['flatten0_output']
     # model = net_init(sys.argv[1],int(sys.argv[2]),gpu=7)
     model = net_init(sys.argv[1],int(sys.argv[2]),gpu=7,feature_layers=feature_layers)
     # model = net_init(sys.argv[1],int(sys.argv[2]),gpu=7,feature_layers=['fc-3_output'])
