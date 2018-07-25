@@ -62,7 +62,7 @@ bucket-test
 
 6. 正常查询不需要加任何额外参数。
 ```
-$ python domain_pop.py domain-test.com 
+$ python domain_pop domain-test.com 
 
 ================================================================================
 Arguments submitted:
