@@ -150,7 +150,7 @@ def main():
 
 if __name__ == '__main__':
     version = re.compile('.*\d+/\d+\s+(v[\d.]+)').findall(_init_.__doc__)[0]
-    args = docopt.docopt(_init_.__doc__, version='Multi-threading downloader {}'.format(
+    args = docopt.docopt(_init_.__doc__, version='Multi-threading hash checker {}'.format(
         version), argv=None, help=True, options_first=False)
     _init_()
     print('start checking...')
