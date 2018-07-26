@@ -34,12 +34,12 @@ def _init_():
     2017/12/27      v1.0        basic functions
 
     Usage:
-        checkout_md5.py                 <infile> <outfile> <thread-number>
+        check_md5.py                    <infile> <outfile> <thread-number>
                                         [-d | --delete-dup]
                                         [--data-prefix=str --uniq-filelist=str]
 
-        checkout_md5.py                 -v|--version
-        checkout_md5.py                 -h|--help
+        check_md5.py                    -v|--version
+        check_md5.py                    -h|--help
 
     Arguments:
         <infile>                        input file list
