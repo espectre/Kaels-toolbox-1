@@ -45,6 +45,7 @@ def _init_():
     Contributor: 
 
     Change log:
+    2018/07/23  v3.3                fix testing bug caused by mxnet v1.0.0
     2018/06/22  v3.2                support mutable images testing
     2018/06/19  v3.1                support multi(3 for now) crop
     2018/06/11  v3.0                code-refactoring 
