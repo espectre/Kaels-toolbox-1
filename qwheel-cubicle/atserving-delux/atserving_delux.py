@@ -31,7 +31,8 @@ def _init_():
     2018/07/31      v1.0                basic functions
 
     Usage:
-        atserving_delux.py              [--cfg=str] 
+        atserving_delux.py              [-s|--single-mode]
+                                        [--cfg=str --url=str] 
         atserving_delux.py              -v|--version
         atserving_delux.py              -h|--help
 
@@ -40,8 +41,10 @@ def _init_():
     Options:
         -h --help                       show this screen
         -v --version                    show script version
+        -s --single-mode                set to post just one single resource
         ------------------------------------------------------------------------------------
         --cfg=str                       configuration file [default: ./atserving_delux.conf]
+        --url=str                       
     """
     print('=' * 80 + '\nArguments submitted:')
     for key in sorted(args.keys()):
@@ -75,8 +78,8 @@ def main():
     auth = _init_auth(conf) 
     print('=> Posting...')
     tic = time.time()
-    # tmp = post(auth, conf, 'http://7xlv47.com1.z0.glb.clouddn.com/pulpsexy.jpg') 
-    tmp = post(auth, conf, 'http://pak58nghz.bkt.clouddn.com/pulp_samples/youtube_sexy_1.mp4') 
+    if args['--single-mode']:
+        tmp = post(auth, conf, args['--url']) 
     print('=> Response time: {:.3f}s'.format(time.time()-tic))
     print('=> Result:')
     if tmp:
