@@ -125,7 +125,7 @@ def demo_net(predictor, image_name, vis=False, save_dir='./', save_name='tmp.jpg
             print('---------', CLASSES[ind], '---------')
             print(boxes)
             for box in boxes:
-                tmp_box = box.tolist()[:]
+                tmp_box = [round(x, 6) for x in box.tolist()[:]]
                 tmp_box.append(str(CLASSES[ind]))
                 result_lst.append(tmp_box)
     if vis:
@@ -162,6 +162,7 @@ def parse_args():
     parser.add_argument('--gpu', help='GPU device to use', default=0, type=int)
     parser.add_argument('--vis', help='display result', action='store_true')
     parser.add_argument('--test', help='single image test mode', action='store_true')
+    parser.add_argument('--save_json', help='path to result json file', default='./tmp.json', type=str)
     args = parser.parse_args()
     return args
 
@@ -193,7 +194,8 @@ def main(args):
                  img.strip(), args.vis, save_dir=args.savedir, save_name=img.strip(), threshold=args.threshold)
         # if tmp:
         result_dic[img.strip()] = tmp
-    json.dump(result_dic,open('tmp.json','w'),indent=4)
+    json.dump(result_dic, open(args.save_json, 'w'),indent=2)
+    print('result json file saved to: {}'.format(args.save_json))
 
 def test(args):
     global CLASSES, DATA_SHAPES, SHORT_SIDE, LONG_SIDE
