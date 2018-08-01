@@ -24,10 +24,13 @@ def _init_():
     """
     Call atserving restful api  
     Supported api: qpulp
-    Update: 2018/07/31
+    Update: 2018/08/01
     Contributor: 
 
     Change log:
+    2018/08/01      v1.1                support minimum customized params of
+                                        video api: pulp/terror/politician 
+                                        minimum params
     2018/07/31      v1.0                basic functions
 
     Usage:
@@ -63,7 +66,11 @@ def post(auth, conf, data_url):
     resp = post_request(auth, conf, data_url)
     # print(resp.status_code)
     # print(resp.content)
-    resp_text = json.loads(resp.text)
+    try:
+        resp_text = json.loads(resp.text)
+    except:
+        print('ERROR: response error\n  |-status code: {}\n  |-raw content: {}'.format(resp.status_code, resp.content))
+        return None
     if resp.status_code == 200:
         return resp_text 
     else:
@@ -76,6 +83,7 @@ def main():
     conf.read(args['--cfg'])
     print('=> ...Configuration file loaded')
     auth = _init_auth(conf) 
+    print('=> Host: {}\n   Post: {}\n   Data uri: {}'.format(conf.get('params','host'), conf.get('params','query'), args['--url']))
     print('=> Posting...')
     tic = time.time()
     if args['--single-mode']:

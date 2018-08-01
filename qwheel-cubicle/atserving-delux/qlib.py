@@ -21,9 +21,10 @@ def qiniu_mac_auth(ak, sk):
 #     return buffer_json
 
 
-def _payload_wrapper(data_url, data_type='image'):
+def _payload_wrapper(data_url, conf):
     '''
     '''
+    data_type = conf.get('params', 'data_type')
     payload = dict()
     if data_type == 'image':
         payload['data'] = dict()
@@ -34,10 +35,11 @@ def _payload_wrapper(data_url, data_type='image'):
         payload['params'] = dict()
         payload['params']['async'] = False 
         payload['params']['vframe'] = dict()
-        payload['params']['vframe']['interval'] = 3
+        payload['params']['vframe']['interval'] = conf.getint('vframe', 'interval')
         payload['params']['vframe']['mode'] = 0
         payload['ops'] = list() 
-        payload['ops'].append({'op': 'pulp'}) 
+        for op in conf.get('ops', 'op').split(','):
+            payload['ops'].append({'op': op}) 
     else:
         print('ERROR: unsupported data type: {}'.format(data_type))
     return payload
@@ -49,8 +51,7 @@ def post_request(auth, conf, data_url, proto='http://'):
     '''
     host = conf.get('params', 'host') 
     query = conf.get('params', 'query') 
-    data_type = conf.get('params', 'data_type')
-    payload = _payload_wrapper(data_url, data_type=data_type)
+    payload = _payload_wrapper(data_url, conf)
     token = auth.token_of_request(
         method='POST',
         host=host,
