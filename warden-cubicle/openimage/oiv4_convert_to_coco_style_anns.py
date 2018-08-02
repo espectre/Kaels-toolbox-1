@@ -82,6 +82,7 @@ def main():
             if not unknown_lst:
                  print("WARNING: box of unknown class found!")
             unknown_lst.append((item['ImageID'],width,height,tmp['id'],item['XMin'],item['YMin'],item['XMax'],item['YMax']))
+            count += 1
             continue
         tmp['segmentation'] = list() 
         # bbox = [x,y,w,h]
