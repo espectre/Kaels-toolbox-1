@@ -3,6 +3,12 @@ import os
 import re
 import struct
 import magic
+import random
+import numpy as np
+import cv2
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
 class UnknownImageFormat(Exception):
@@ -126,3 +132,44 @@ def check_bounding_box(bbox,width,height,img_id,digits=2,rel_coor=False,restrict
         if check==1 and log_error: 
             print('warning: encounterd invalid box {}, in image {}, w{}, h{}'.format(bbox, img_id, width, height))
         return x,y,w,h,check 
+
+def box_viz(img_path, dets, pixel_means, class_names, threshold=0.5, save_path='./tmp.png', transform=True, dpi=80, coor_scale=1.0, line_width=3.0):
+    img = cv2.imread(img_path)
+    img = img[...,::-1]
+
+    # if transform:
+    #     im = transform_im(im, np.array(pixel_means)[[2, 1, 0]])
+
+    # Create a canvas the same size of the image
+    height, width, _ = img.shape
+    out_size = width/float(dpi), height/float(dpi)
+    fig = plt.figure(figsize=out_size)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis('off')
+
+    # Display the image
+
+    ax.imshow(img, interpolation='nearest')
+
+    # Display Detections
+    color_map = [(random.random(), random.random(), random.random()) for x in range(len(class_names))] 
+    for det in dets:
+        bbox = [x * coor_scale for x in det[:4]]
+        score = det[-2] 
+        cls = det[-1]
+        color = color_map[class_names.index(cls)]
+        if score < threshold:
+            continue
+        rect = plt.Rectangle((bbox[0], bbox[1]),
+                             bbox[2] - bbox[0],
+                             bbox[3] - bbox[1], fill=False,
+                             edgecolor=color, linewidth=line_width)
+        ax.add_patch(rect)
+        ax.text(bbox[0]+4, bbox[1]-8 if bbox[1]>15 else bbox[1]+15, '{:s} {:.2f}'.format(cls, score), bbox=dict(facecolor=color, alpha=0.5), fontsize=10, color='white')
+
+    ax.set(xlim=[0, width], ylim=[height, 0], aspect=1)
+    fig.savefig(save_path, dpi=dpi, transparent=True)
+    plt.cla()
+    plt.clf()
+    plt.close()
+
