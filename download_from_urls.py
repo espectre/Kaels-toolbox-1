@@ -18,6 +18,7 @@ import docopt
 # globale vars initialization
 GLOBAL_LOCK = threading.Lock()
 ERROR_NUMBER = 0
+DOWNLOAD_NUMBER = 1
 FILE_NAME = str()
 
 
@@ -26,6 +27,7 @@ def _init_():
     Multi-threading downloader script
 
     Change log:
+    2018/08/06      v1.4        optimized std out
     2018/03/05      v1.3        fix bug
     2018/02/27      v1.2        update saving mapping-file feature
     2018/02/26      v1.1        support save as original basename
@@ -97,7 +99,7 @@ class prod_worker(threading.Thread):
             # print(temp, 'put into queue by', self.name)
             GLOBAL_LOCK.release()
         GLOBAL_LOCK.acquire()
-        print('thread:', self.name, 'successfully quit')
+        print('=> thread:', self.name, 'successfully quit')
         GLOBAL_LOCK.release()
 
 
@@ -111,22 +113,23 @@ class cons_worker(threading.Thread):
     def download(self, url, output_path, err_num):
         try:
             # commands.getoutput('wget -O {} {}'.format(output_path, url))
-            if os.system('wget -O {} {}'.format(output_path, url)) != 0:
-                print('download error:', url)
+            if os.system('wget -q -O {} {}'.format(output_path, url)) != 0:
+                print('=> download ERROR:', url)
                 err_num += 1
         except all as e:
-            print('download error:', url)
+            print('=> download ERROR:', url)
             err_num += 1
         return err_num
 
     def run(self):
-        global ERROR_NUMBER
+        global ERROR_NUMBER, DOWNLOAD_NUMBER
         err_num = 0
         while(not self.queue.empty()):
             if GLOBAL_LOCK.acquire(False):
                 # customized downloading code
                 temp = self.queue.get()
-                print('downloading: ',temp['url'])
+                print('=> file [{}]: {}'.format(DOWNLOAD_NUMBER, temp['url']))
+                DOWNLOAD_NUMBER += 1
                 GLOBAL_LOCK.release()
                 err_num = self.download(temp['url'], temp['filename'], err_num)
                 # time.sleep(5)
@@ -135,7 +138,7 @@ class cons_worker(threading.Thread):
                 pass
         GLOBAL_LOCK.acquire()
         ERROR_NUMBER += err_num
-        print('thread:', self.name, 'successfully quit')
+        print('=> thread:', self.name, 'successfully quit')
         GLOBAL_LOCK.release()
 
 
@@ -149,7 +152,7 @@ def filename_init():
     FILE_NAME = args['--prefix'] + '_{}_{:0>8}' + \
         args['--suffix'] + '.' + args['--ext']
     if not args['--basename']:
-        print('files will be saved as:', FILE_NAME.format(args['--date'], 0))
+        print('=> files will be saved as:', FILE_NAME.format(args['--date'], 0))
 
 
 def main():
@@ -161,7 +164,7 @@ def main():
     queue = Queue.Queue(0)
     thread_prod = prod_worker(queue, infile, f2u, u2f, args['--basename'])
     thread_prod.start()
-    print('thread:', thread_prod.name, 'successfully started')
+    print('=> thread:', thread_prod.name, 'successfully started')
     time.sleep(1)
     for i in xrange(thread_count):
         exec('thread_cons_{} = cons_worker(queue)'.format(i))
@@ -169,7 +172,7 @@ def main():
     thread_prod.join()
     for i in xrange(thread_count):
         eval('thread_cons_{}.join()'.format(i))
-    print('total error number:', ERROR_NUMBER)
+    print('=> total error number:', ERROR_NUMBER)
     infile.close()
     if args['--mapfile-path']:
         with open(os.path.join(args['--mapfile-path'],'f2u.json'), 'w') as f:
@@ -185,7 +188,7 @@ if __name__ == '__main__':
     args = docopt.docopt(_init_.__doc__, version='Multi-threading downloader {}'.format(
         version), argv=None, help=True, options_first=False)
     _init_()
-    print('start downloading...')
+    print('=> start downloading...')
     main()
-    print('...done')
+    print('=> ...done')
 
