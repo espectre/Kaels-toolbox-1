@@ -30,6 +30,7 @@ def _init_():
     Export service logs using atflow log proxy
 
     Change log:
+    2018/08/09      v1.3                optimze job id logging
     2018/05/23      v1.2                update remote api
     2018/03/28      v1.1                update remote api
     2018/02/26      v1.0                basic functions
@@ -151,9 +152,9 @@ def main():
         print('=> Job status: ')
         _ = exportstate(ak, sk, ret['id'])
         pprint.pprint(_)
-        with open('job_id.tmp', 'w') as f:
-            f.write(ret['id'])
-        print('=> Job id temporarily saved in ./job_id.tmp')
+        with open('job_id.log', 'a') as f:
+            f.write('{} => {}\n'.format(datetime.now().strftime("%Y-%m-%d-%H:%M:%S"), ret['id']))
+        print('=> Job id saved in ./job_id.log')
     elif args['--check']:
         assert args['--job-id'], 'checking job status task needs one job-id'
         ret = exportstate(ak, sk, args['--job-id'])
