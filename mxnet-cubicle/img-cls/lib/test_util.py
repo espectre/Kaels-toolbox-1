@@ -110,7 +110,7 @@ def generic_multi_gpu_test(model, img_list, categories, batch_size, input_shape,
                 for idx_crop,crop in enumerate(img_crs):
                     img_batch[idx_crop] = mx.nd.array(crop[np.newaxis, :])
             else:
-                if mx.__version__ == '1.0.0':
+                if mx.__version__ == '1.0.0' or '1.1.0' or '1.2.0':
                     img_batch[idx] = mx.nd.array(img_tmp)
                 else:
                     img_batch[idx] = mx.nd.array(img_tmp[np.newaxis, :])
