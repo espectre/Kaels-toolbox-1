@@ -17,11 +17,12 @@ import docopt
 def _init_():
     '''
     Script for generating AVA-standard jsonlist file
-    Update: 2018/03/13
+    Update: 2018/08/13
     Author: @Northrend
     Contributor: 
 
     Change log:
+    2018/08/13   v1.2        support detection pre-json 
     2018/05/03   v1.1        support detection 
     2018/03/13   v1.0        basic functions
 
@@ -65,7 +66,7 @@ class input_syntax_err(Exception):
 def generate_dict(filename, prefix, classification=False, detection=False, clustering=False, sub_task=None, pre_ann=None, pre_label=None):
     temp = dict()
     temp['url'] = prefix + filename if prefix else filename
-    temp['ops'] = 'download()'
+    # temp['ops'] = 'download()'
     # temp['source_url'] = temp['url']
     temp['type'] = 'image'
     temp['label'] = list() 
@@ -92,9 +93,13 @@ def generate_dict(filename, prefix, classification=False, detection=False, clust
         tmp['name'] = sub_task
         tmp['data'] = list()
         if pre_ann:
-            pass
             # ---- modify pre-annotated label here ----
-            # temp['label']['detect']['general_d'] = pre_ann[filename]
+            for box in pre_ann[filename]:
+                x1,y1,x2,y2,cls = box[:]
+                tmp_box = dict()
+                tmp_box['bbox'] = [[x1,y1], [x2,y1], [x2,y2], [x1,y2]]
+                tmp_box['class'] = cls
+                tmp['data'].append(tmp_box)
             # -----------------------------------------
         temp['label'].append(tmp)
     # if clustering:
