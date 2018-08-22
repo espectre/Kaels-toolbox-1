@@ -62,6 +62,13 @@ class input_syntax_err(Exception):
     pass
 
 
+def _get_filename_with_parents(filepath, level=1):
+    common = filepath
+    for i in range(level + 1):
+        common = os.path.dirname(common)
+    return os.path.relpath(filepath, common)
+
+
 def get_category(category_path):
     label_list = list()
     with open(category_path, 'r') as f:
@@ -84,7 +91,8 @@ def main():
         for item in json_lst:
             try:
                 temp_dict = json.loads(item.strip())
-                img = os.path.basename(temp_dict['url'])
+                # img = os.path.basename(temp_dict['url'])
+                img = temp_dict['url']
                 label = category.index(temp_dict['label'][0]['data'][0]['class'])
             except:
                 print('syntax error:',item.strip())
