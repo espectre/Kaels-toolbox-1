@@ -23,6 +23,13 @@ def convert_img_id(item_lst):
     return item_lst
 
 
+def _round_coors(coor_list):
+    coor_res = list()
+    for x in coor_list:
+        coor_res.append(round(float(x)))
+    return coor_res
+
+
 def load_annotations(csv_path):
     '''
     load openimage official bounding-box annotations file
@@ -34,6 +41,7 @@ def load_annotations(csv_path):
             tmp['ImageIndex'] = idx
             tmp['ImageID'],tmp['Source'],tmp['LabelName'],tmp['Confidence'],tmp['XMin'],tmp['XMax'],tmp['YMin'],tmp['YMax'] = buff.strip().split(',')[:8]
             # tmp['Width'], tmp['Height'] = 1024, 768
+            tmp['XMin'],tmp['XMax'],tmp['YMin'],tmp['YMax'] = _round_coors([tmp['XMin'],tmp['XMax'],tmp['YMin'],tmp['YMax']]) 
             raw.append(tmp)
     print(len(raw),'bounding-boxes loaded.')
     return raw
