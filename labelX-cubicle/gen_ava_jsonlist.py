@@ -65,7 +65,7 @@ class input_syntax_err(Exception):
 
 def generate_dict(filename, prefix, classification=False, detection=False, clustering=False, sub_task=None, pre_ann=None, pre_label=None):
     temp = dict()
-    temp['url'] = prefix + filename if prefix else filename
+    temp['url'] = os.path.join(prefix,filename) if prefix else filename
     # temp['ops'] = 'download()'
     # temp['source_url'] = temp['url']
     temp['type'] = 'image'
@@ -95,7 +95,7 @@ def generate_dict(filename, prefix, classification=False, detection=False, clust
         if pre_ann:
             # ---- modify pre-annotated label here ----
             for box in pre_ann[filename]:
-                x1,y1,x2,y2,cls = box[:]
+                x1,y1,x2,y2,score,cls = box[:]
                 tmp_box = dict()
                 tmp_box['bbox'] = [[x1,y1], [x2,y1], [x2,y2], [x1,y2]]
                 tmp_box['class'] = cls
