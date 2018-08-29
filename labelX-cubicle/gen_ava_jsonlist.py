@@ -17,11 +17,12 @@ import docopt
 def _init_():
     '''
     Script for generating AVA-standard jsonlist file
-    Update: 2018/08/13
+    Update: 2018/08/22
     Author: @Northrend
     Contributor: 
 
     Change log:
+    2018/08/22   v1.3        some fit stuff 
     2018/08/13   v1.2        support detection pre-json 
     2018/05/03   v1.1        support detection 
     2018/03/13   v1.0        basic functions
@@ -125,7 +126,7 @@ def main():
             if len(buff.strip().split()) == 1:      # input syntax error
                 file_lst.append(buff.strip())
             elif len(buff.strip().split()) == 2:
-                file_lst.append(buff.strip().split())
+                file_lst.append(buff.strip())
             else:
                 raise input_syntax_err
             
