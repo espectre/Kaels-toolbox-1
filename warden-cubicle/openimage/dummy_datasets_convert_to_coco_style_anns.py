@@ -22,7 +22,7 @@ from openimage import load_categories,load_annotations
 from image import get_image_size_core,check_bounding_box
 
 KILL_INVALID_BOX = True # set to skip invalid box
-OPENCV_CHECK = False    # set to check image by cv2.imread, extremely slow
+OPENCV_CHECK = True    # set to check image by cv2.imread, extremely slow
 
 def main():
     '''
@@ -69,7 +69,7 @@ def main():
         if OPENCV_CHECK:
             try:
                 _img_read = cv2.imread(tmp_img_path)
-                print(os.path.basename(tmp_img_path))
+                # print(os.path.basename(tmp_img_path))
                 if np.shape(_img_read) == tuple():
                     print('Error image:',tmp_img_path)
                     continue    
@@ -104,7 +104,7 @@ def main():
         if coordinate_scale:
             bbox = [float(item['XMin'])*width, float(item['YMin'])*height, (float(item['XMax'])-float(item['XMin']))*width, (float(item['YMax'])-float(item['YMin']))*height]
         else:
-            bbox = [int(item['XMin']), int(item['YMin']), int(item['XMax'])-int(item['XMin']), int(item['YMax'])-int(item['YMin'])]
+            bbox = [round(float(item['XMin'])), round(float(item['YMin'])), round(float(item['XMax'])-float(item['XMin'])), round(float(item['YMax'])-float(item['YMin']))]
         tmp['bbox'] = [float('{:.2f}'.format(x)) for x in bbox]
         tmp['area'] = float('{:.2f}'.format(tmp['bbox'][2]*tmp['bbox'][3]))
         check = check_bounding_box(tmp['bbox'], width, height, item['ImageID'])
