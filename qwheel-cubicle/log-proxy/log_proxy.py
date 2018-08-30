@@ -37,7 +37,7 @@ def _init_():
 
     Usage:
         log_proxy.py                    <infile> [-s|--start -c|--check] 
-                                        [--job-id=str]
+                                        [--job-id=str --job-id-log=str]
         log_proxy.py                    -v|--version
         log_proxy.py                    -h|--help
 
@@ -51,6 +51,7 @@ def _init_():
         -c --check                      check job status
         ------------------------------------------------------------------
         --job-id=str                    job id, needed in checking task
+        --job-id-log=str                file to save job id [default: job_id.log]
     """
     print('=' * 80 + '\nArguments submitted:')
     for key in sorted(args.keys()):
@@ -152,9 +153,9 @@ def main():
         print('=> Job status: ')
         _ = exportstate(ak, sk, ret['id'])
         pprint.pprint(_)
-        with open('job_id.log', 'a') as f:
+        with open(args['--job-id-log'], 'a') as f:
             f.write('{} => {}\n'.format(datetime.now().strftime("%Y-%m-%d-%H:%M:%S"), ret['id']))
-        print('=> Job id saved in ./job_id.log')
+        print('=> Job id saved in', args['--job-id-log'])
     elif args['--check']:
         assert args['--job-id'], 'checking job status task needs one job-id'
         ret = exportstate(ak, sk, args['--job-id'])
