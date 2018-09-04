@@ -5,7 +5,7 @@ import sys
 import json
 
 
-FILTER_BOX = False 
+FILTER_BOX = False    # set False to filter 51 cls 
 
 def cat_mask(hardcat_file):
     with open(hardcat_file,'r') as f:
