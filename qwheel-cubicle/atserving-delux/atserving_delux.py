@@ -17,17 +17,18 @@ import requests
 import docopt
 import pprint
 import ConfigParser
-from qlib import qiniu_auth, qiniu_mac_auth, post_request
+from qlib import qiniu_auth, qiniu_mac_auth, post_request, get_request
 
 
 def _init_():
     """
     Call atserving restful api  
     Supported api: qpulp
-    Update: 2018/08/01
+    Update: 2018/08/10
     Contributor: 
 
     Change log:
+    2018/08/10      v1.2                support async video request 
     2018/08/01      v1.1                support minimum customized params of
                                         video api: pulp/terror/politician 
                                         minimum params
@@ -64,6 +65,22 @@ def _init_auth(conf, auth_type='mac'):
 
 def post(auth, conf, data_url):
     resp = post_request(auth, conf, data_url)
+    # print(resp.status_code)
+    # print(resp.content)
+    try:
+        resp_text = json.loads(resp.text)
+    except:
+        print('ERROR: response error\n  |-status code: {}\n  |-raw content: {}'.format(resp.status_code, resp.content))
+        return None
+    if resp.status_code == 200:
+        return resp_text 
+    else:
+        print('ERROR: response error\n  |-status code: {}\n  |-error message: {}'.format(resp.status_code, resp_text['error']))
+        return None
+
+
+def get(auth, conf, data_url):
+    resp = get_request(auth,conf,data_url)
     # print(resp.status_code)
     # print(resp.content)
     try:

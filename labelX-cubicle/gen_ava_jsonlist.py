@@ -17,11 +17,12 @@ import docopt
 def _init_():
     '''
     Script for generating AVA-standard jsonlist file
-    Update: 2018/08/13
+    Update: 2018/08/22
     Author: @Northrend
     Contributor: 
 
     Change log:
+    2018/08/22   v1.3        some fit stuff 
     2018/08/13   v1.2        support detection pre-json 
     2018/05/03   v1.1        support detection 
     2018/03/13   v1.0        basic functions
@@ -65,7 +66,7 @@ class input_syntax_err(Exception):
 
 def generate_dict(filename, prefix, classification=False, detection=False, clustering=False, sub_task=None, pre_ann=None, pre_label=None):
     temp = dict()
-    temp['url'] = prefix + filename if prefix else filename
+    temp['url'] = os.path.join(prefix,filename) if prefix else filename
     # temp['ops'] = 'download()'
     # temp['source_url'] = temp['url']
     temp['type'] = 'image'
@@ -95,7 +96,7 @@ def generate_dict(filename, prefix, classification=False, detection=False, clust
         if pre_ann:
             # ---- modify pre-annotated label here ----
             for box in pre_ann[filename]:
-                x1,y1,x2,y2,cls = box[:]
+                x1,y1,x2,y2,score,cls = box[:]
                 tmp_box = dict()
                 tmp_box['bbox'] = [[x1,y1], [x2,y1], [x2,y2], [x1,y2]]
                 tmp_box['class'] = cls
@@ -125,7 +126,7 @@ def main():
             if len(buff.strip().split()) == 1:      # input syntax error
                 file_lst.append(buff.strip())
             elif len(buff.strip().split()) == 2:
-                file_lst.append(buff.strip().split())
+                file_lst.append(buff.strip())
             else:
                 raise input_syntax_err
             

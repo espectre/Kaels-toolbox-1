@@ -14,6 +14,14 @@
 
 可以在下载完成后重命名为 log_proxy，并**确认文件的可执行权限**
 
+#### v1.3 
+
+> update 2018-08-09
+
+* [linux](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_linux_v1.3)
+
+* [mac](http://pbmt9e0id.bkt.clouddn.com/log_proxy/log_proxy_mac_v1.3)
+
 #### v1.2 
 
 > update 2018-05-23

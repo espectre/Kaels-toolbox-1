@@ -33,13 +33,16 @@ def _payload_wrapper(data_url, conf):
         payload['data'] = dict()
         payload['data']['uri'] = data_url 
         payload['params'] = dict()
-        payload['params']['async'] = False 
+        payload['params']['async'] = conf.getboolean('params', 'async')
         payload['params']['vframe'] = dict()
         payload['params']['vframe']['interval'] = conf.getint('vframe', 'interval')
         payload['params']['vframe']['mode'] = 0
         payload['ops'] = list() 
         for op in conf.get('ops', 'op').split(','):
             payload['ops'].append({'op': op}) 
+    elif data_type == 'job':
+        payload['data'] = dict()
+        payload['data']['job'] = conf.get('params','async_job_id')
     else:
         print('ERROR: unsupported data type: {}'.format(data_type))
     return payload
@@ -62,3 +65,22 @@ def post_request(auth, conf, data_url, proto='http://'):
     )
     headers = {"Content-Type": "application/json", "Authorization": "Qiniu {}".format(token)}
     return requests.post(proto+host+query, headers=headers, data=json.dumps(payload))
+
+
+def get_request(auth, conf, data_url, proto='http://'):
+    '''
+    post one single request to atserving api
+    '''
+    host = conf.get('params', 'host') 
+    query = conf.get('params', 'query') 
+    # payload = _payload_wrapper(data_url, conf)
+    token = auth.token_of_request(
+        method='GET',
+        host=host,
+        url=query,
+        content_type='application/json',
+        qheaders=''
+        # body=json.dumps(payload)
+    )
+    headers = {"Content-Type": "application/json", "Authorization": "Qiniu {}".format(token)}
+    return requests.get(proto+host+query, headers=headers)
