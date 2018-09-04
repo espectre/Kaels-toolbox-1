@@ -9,7 +9,7 @@ sys.path.append(os.path.join(cur_path,'../lib'))
 from openimage import load_categories
 from image import box_viz
 
-GT = True    # set True to viz gt
+GT = False    # set True to viz gt
 
 def convert_coco_anns(raw):
     result = dict()
@@ -29,7 +29,7 @@ def main():
     '''
     :params: /path/to/image/list /path/to/input/json /path/to/save/dir/ /path/to/catrgory/file /path/to/image/prefix [optinal]/path/to/alias/file
     '''
-    threshold = 0.5
+    threshold = 0.000000001
     cats = load_categories(sys.argv[4]) 
     class_names = cats
     if len(sys.argv) == 7:
