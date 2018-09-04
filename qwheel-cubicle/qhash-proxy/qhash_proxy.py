@@ -19,15 +19,18 @@ import docopt
 GLOBAL_LOCK = threading.Lock()
 ERROR_NUMBER = 0
 FILE_NAME = str()
+RETRY_COUNT = dict()
+MAX_RETRY_TIMES = 5    # retry 5 times by default
 
 
 def _init_():
     """
     Getting remote file hash with multi-thread
-    Update: 2018/05/08
+    Update: 2018/09/04
     Contributor: laojiangwei@github.com 
 
     Change log:
+    2018/09/04          v1.3            fix 404 bug and add retry feature
     2018/05/08          v1.2            fix bug
     2018/04/20          v1.1            fix bug 
     2018/03/01          v1.0            basic functions
@@ -99,19 +102,20 @@ class cons_worker(threading.Thread):
         self.hash_alg_list = hash_alg_list
         self.prefix = prefix
 
-    def get_qhash(self, url, alg, err_num):
+    def get_qhash(self, url, alg):
         req = '{}?qhash/{}'.format(url, alg)
         ret = requests.get(req, timeout=10)
         if ret.status_code != 200:
-            # raise request_err
-            print('return error:', req)
-            err_num += 1
-            return None, err_num
-        else:
-            return json.loads(ret.text), err_num
+            raise request_err
+        try:
+            ret_dict = json.loads(ret.text)
+            return ret_dict
+        except:
+            raise request_err
+                
 
     def run(self):
-        global ERROR_NUMBER
+        global ERROR_NUMBER, RETRY_COUNT
         err_num = 0
         while(not self.queue.empty()):
             if GLOBAL_LOCK.acquire(False):
@@ -126,15 +130,21 @@ class cons_worker(threading.Thread):
                     url_tmp = file_tmp
                 for hash_alg in self.hash_alg_list:
                     try:
-                        result, err_num = self.get_qhash(url_tmp, hash_alg, err_num)
-                    except requests.exceptions.ConnectionError:
+                        result = self.get_qhash(url_tmp, hash_alg)
+                    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, request_err):
                         GLOBAL_LOCK.acquire()
-                        self.queue.put(file_tmp)
-                        GLOBAL_LOCK.release()
-                        break
-                    except requests.exceptions.Timeout:
-                        GLOBAL_LOCK.acquire()
-                        self.queue.put(file_tmp)
+                        err_num += 1
+                        # retry
+                        if url_tmp not in RETRY_COUNT:
+                            self.queue.put(file_tmp)
+                            RETRY_COUNT[url_tmp] = 1
+                            print('request error: {}'.format(url_tmp))
+                        elif RETRY_COUNT[url_tmp] < MAX_RETRY_TIMES:
+                            self.queue.put(file_tmp)
+                            RETRY_COUNT[url_tmp] += 1
+                            print('RETRY[{}] request error: {}'.format(RETRY_COUNT[url_tmp], url_tmp))
+                        else:
+                            print('max retrying times exceeded: {}'.format(url_tmp))
                         GLOBAL_LOCK.release()
                         break
                     if result:
@@ -171,7 +181,7 @@ def main():
     for i in xrange(thread_count):
         eval('thread_cons_{}.join()'.format(i))
     toc = time.time()    
-    print('total error number:', ERROR_NUMBER)
+    print('total error request times:', ERROR_NUMBER)
     print('processing time:', (toc-tic),'s')
     infile.close()
     with open(output, 'w') as f:
