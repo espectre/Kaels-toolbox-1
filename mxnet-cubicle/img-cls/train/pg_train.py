@@ -36,15 +36,16 @@ fhandler = None     # log to file
 def _init_():
     '''
     Precision-guided training for image classification task on mxnet
-    Update: 2018/05/30
+    Update: 2018/09/06
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/09/06      v1.1            support single image heatmap 
     2018/05/30      v1.0            basic functions
 
     Usage:
-        pg_train.py                 <input-cfg>
+        pg_train.py                 <input-cfg> [-s|--single-img]
         pg_train.py                 -v | --version
         pg_train.py                 -h | --help
 
@@ -54,6 +55,7 @@ def _init_():
     Options:
         -h --help                   show this help screen
         -v --version                show current version
+        -s --single-img             single img model, will draw heat-map simultaneously
     '''
     # merge configuration
     merge_cfg_from_file(args["<input-cfg>"])
@@ -113,7 +115,7 @@ def main():
     batch_size = 1  #   single image for now 
     target_shape = cfg.PG.TARGET_SHAPE 
     kwargs = dict()
-    # kwargs['resize_w_h'] = cfg.INPUT_SHAPE[1:]
+    kwargs['resize_w_h'] = cfg.INPUT_SHAPE[1:]
     kwargs['resize_min_max'] = cfg.RESIZE_RANGE
     kwargs['mean_rgb'] = cfg.MEAN_RGB
     kwargs['std_rgb'] = cfg.STD_RGB
@@ -124,28 +126,46 @@ def main():
     fc_weights = arg_params[cfg.PG.CLASSIFIER_WEIGHTS].asnumpy()
     model = init_forward_net(sym, arg_params, aux_params, batch_size, input_shape, ctx=mx.gpu(gpu_index), redefine_output_group=cfg.PG.OUTPUT_GROUP, allow_missing=True, allow_extra=True)
 
-    with open(img_lst,'r') as fin, open(pg_img_lst,'w') as fout:
-        for i, item in enumerate(fin.readlines()): 
-            assert len(item.strip().split())<=2, logger.error("Invalid input file syntax")
-            img_path, gt_label = item.strip().split()
-            gt_label = int(gt_label)
-            raw_img = cv2.imread(img_path)
-            if cfg.PG.LOG_GEN_GUIDER:
-                logger.info("Batch[{}]: {}".format(i, os.path.basename(img_path)))
-            if np.shape(raw_img) == tuple():
-                logger.error("Image file error")
-                continue 
-            guider = generate_guider(raw_img, gt_label, target_shape, model, fc_weights, kwargs, log=cfg.PG.LOG_GEN_GUIDER)
-            if np.shape(guider):
-                recover_img_path = os.path.join(pg_img_save_path, os.path.splitext(cfg.PG.IMG_CACHE_PREFIX+os.path.basename(img_path))[0]) + cfg.PG.IMG_CACHE_EXT 
-                cv2.imwrite(recover_img_path, guider)
-                # os.rename(recover_img_path, os.path.splitext(recover_img_path)[0])
-                # fout.write("{} {}\n".format(os.path.splitext(recover_img_path)[0], gt_label))
-                fout.write("{} {}\n".format(recover_img_path, gt_label))
-            else:
-                logger.info("Failed generating guider")
+    if args['--single-img']:
+        mock_cats = ["pulp","sexy","normal"]
+        img_path = cfg.PG.INPUT_IMG_PATH
+        raw_img = cv2.imread(img_path)
+        if np.shape(raw_img) == tuple():
+            logger.error("Image file error")
+            return 0
+        img = np_img_preprocessing(raw_img, keep_aspect_ratio=False, **kwargs)
+        Batch = namedtuple('Batch', ['data'])
+        img_batch = mx.nd.array(img[np.newaxis, :])
+        model.forward(Batch([img_batch])) 
+        outputs = model.get_outputs() 
+        conv_feature_map = outputs[0].asnumpy()[0]
+        score = outputs[1].asnumpy()[0]
+        draw_cam(os.path.join(pg_img_save_path, 'tmp.png'), cv2.cvtColor(raw_img,cv2.COLOR_BGR2RGB), raw_img.shape[1], raw_img.shape[0], 1, conv_feature_map, fc_weights, mock_cats, score)
+        
+    else:
+        with open(img_lst,'r') as fin, open(pg_img_lst,'w') as fout:
+            for i, item in enumerate(fin.readlines()): 
+                assert len(item.strip().split())<=2, logger.error("Invalid input file syntax")
+                img_path, gt_label = item.strip().split()
+                gt_label = int(gt_label)
+                raw_img = cv2.imread(img_path)
+                if cfg.PG.LOG_GEN_GUIDER:
+                    logger.info("Batch[{}]: {}".format(i, os.path.basename(img_path)))
+                if np.shape(raw_img) == tuple():
+                    logger.error("Image file error")
+                    continue 
+                guider = generate_guider(raw_img, gt_label, target_shape, model, fc_weights, kwargs, log=cfg.PG.LOG_GEN_GUIDER)
+                if np.shape(guider):
+                    recover_img_path = os.path.join(pg_img_save_path, os.path.splitext(cfg.PG.IMG_CACHE_PREFIX+os.path.basename(img_path))[0]) + cfg.PG.IMG_CACHE_EXT 
+                    cv2.imwrite(recover_img_path, guider)
+                    # os.rename(recover_img_path, os.path.splitext(recover_img_path)[0])
+                    # fout.write("{} {}\n".format(os.path.splitext(recover_img_path)[0], gt_label))
+                    fout.write("{} {}\n".format(recover_img_path, gt_label))
+                else:
+                    logger.info("Failed generating guider")
                 
 
+    # ---- deprecated codes ----
             # preprocess img
             # img = np_img_preprocessing(test_img, **kwargs)
 
@@ -178,6 +198,7 @@ def main():
             # plt.imshow(im_show)
             # plt.savefig('tmp/{:0>4}.png'.format(i))
             # plt.close()
+    # ---- deprecated codes ----
 
 
 if __name__ == '__main__':

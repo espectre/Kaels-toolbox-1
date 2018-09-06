@@ -9,7 +9,7 @@ sys.path.append(os.path.join(cur_path,'../lib'))
 from openimage import load_categories
 from image import box_viz
 
-GT = True    # set True to viz gt
+GT = False    # set True to viz gt
 
 def convert_coco_anns(raw):
     result = dict()

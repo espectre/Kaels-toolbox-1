@@ -4,8 +4,13 @@
 from __future__ import print_function
 import os
 import logging
+import cv2
 import mxnet as mx
 import numpy as np
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
 def gen_det_map(conv_feat_map, fc_weights):
@@ -86,7 +91,7 @@ def recover_coordinates(img, sample_rate, target_shape, target_index):
     return rec_tl
     
 
-def draw_cam(output_path, rgb_img, width, height, top_k, conv_fm, fc_weights, category, score, display):
+def draw_cam(output_path, rgb_img, width, height, top_k, conv_fm, fc_weights, category, score, display=False):
     '''
     draw class active map
     '''
@@ -95,18 +100,16 @@ def draw_cam(output_path, rgb_img, width, height, top_k, conv_fm, fc_weights, ca
     plt.figure(figsize=(18, 6))
     plt.subplot(1, 1 + top_k, 1)
     plt.imshow(rgb_img)
-    cam = get_cam(conv_fm, fc_weights[idx_sorted, :])
+    cam = gen_det_map(conv_fm, fc_weights[idx_sorted, :])
     for k in xrange(top_k):
         detection_map = np.squeeze(cam.astype(np.float32)[k, :, :])
         heat_map = cv2.resize(detection_map, (width, height))
         max_response = detection_map.mean()
         heat_map /= heat_map.max()
-
         im_show = rgb_img.astype(np.float32)/255*0.3 + plt.cm.jet(heat_map/heat_map.max())[:,:,:3]*0.7
         plt.subplot(1, 1 + top_k, k + 2)
         plt.imshow(im_show)
-        print('Top {}: {}({.6f}), max_response={.4f}'.format(
-            k + 1, category[idx_sorted[k]], score_sorted[k], max_response))
+        print('Top {}: {}({:.6f}), max_response={:.4f}'.format(k + 1, category[idx_sorted[k]], score_sorted[k], max_response))
     if display:
         plt.show()
     plt.savefig(output_path)
