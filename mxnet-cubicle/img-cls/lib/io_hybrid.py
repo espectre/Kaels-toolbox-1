@@ -47,6 +47,7 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     mean_r, mean_g, mean_b, std_r, std_g, std_b = mean[:] + std[:] 
     max_random_scale, min_random_scale = resize_scale 
     logging.info('Input normalization : Mean-RGB {}, Std-RGB {}'.format([mean_r, mean_g, mean_b],[std_r, std_g, std_b]))
+    logging.info('Input scale augmentation : Max-random-sclae {}, Min-random-scale {}'.format(max_random_scale, min_random_scale))
     resize_train, resize_dev = resize
     label_name = 'softmax_label' if not use_svm_label else 'svm_label'
 
@@ -69,6 +70,9 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
         max_rotate_angle=cfg.TRAIN.MAX_ROTATE_ANGLE,
         max_aspect_ratio=cfg.TRAIN.MAX_ASPECT_RATIO,
         max_shear_ratio=cfg.TRAIN.MAX_SHEAR_RATIO,
+        random_h=cfg.TRAIN.RANDOM_H,
+        random_s=cfg.TRAIN.RANDOM_S,
+        random_l=cfg.TRAIN.RANDOM_L,
         mean_r=mean_r,
         mean_g=mean_g,
         mean_b=mean_b,

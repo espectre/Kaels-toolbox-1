@@ -85,7 +85,8 @@ def residual_unit(data, num_filter, stride, dim_match, name, ibn=True, bottle_ne
             shortcut._set_attr(mirror_stage='True')
         return conv2 + shortcut
 
-def resnet(units, num_stage, filter_list, num_class, data_type, ibn, bottle_neck=True, bn_mom=0.9, workspace=512, memonger=False):
+
+def resnet(units, num_stage, filter_list, num_class, ibn, bottle_neck=True, bn_mom=0.9, workspace=512, memonger=False):
     """Return ResNet symbol of cifar10 and imagenet
     Parameters
     ----------
@@ -97,8 +98,6 @@ def resnet(units, num_stage, filter_list, num_class, data_type, ibn, bottle_neck
         Channel size of each stage
     num_class : int
         Ouput size of symbol
-    dataset : str
-        Dataset type, only cifar10 and imagenet supports
     workspace : int
         Workspace used in convolution operator
     """
@@ -106,29 +105,11 @@ def resnet(units, num_stage, filter_list, num_class, data_type, ibn, bottle_neck
     assert(num_unit == num_stage)
     data = mx.sym.Variable(name='data')
     data = mx.sym.BatchNorm(data=data, fix_gamma=True, eps=2e-5, momentum=bn_mom, name='bn_data')
-    if data_type == 'cifar10':
-        body = mx.sym.Convolution(data=data, num_filter=filter_list[0], kernel=(3, 3), stride=(1,1), pad=(1, 1),
-                                  no_bias=True, name="conv0", workspace=workspace)
-    elif data_type == 'imagenet':
-        body = mx.sym.Convolution(data=data, num_filter=filter_list[0], kernel=(7, 7), stride=(2,2), pad=(3, 3),
-                                  no_bias=True, name="conv0", workspace=workspace)
-        body = mx.sym.BatchNorm(data=body, fix_gamma=False, eps=2e-5, momentum=bn_mom, name='bn0')
-        body = mx.sym.Activation(data=body, act_type='relu', name='relu0')
-        body = mx.symbol.Pooling(data=body, kernel=(3, 3), stride=(2,2), pad=(1,1), pool_type='max')
-    elif data_type == 'vggface':
-        body = mx.sym.Convolution(data=data, num_filter=filter_list[0], kernel=(7, 7), stride=(2,2), pad=(3, 3),
-                                  no_bias=True, name="conv0", workspace=workspace)
-        body = mx.sym.BatchNorm(data=body, fix_gamma=False, eps=2e-5, momentum=bn_mom, name='bn0')
-        body = mx.sym.Activation(data=body, act_type='relu', name='relu0')
-        body = mx.symbol.Pooling(data=body, kernel=(3, 3), stride=(2,2), pad=(1,1), pool_type='max')
-    elif data_type == 'msface':
-        body = mx.sym.Convolution(data=data, num_filter=filter_list[0], kernel=(7, 7), stride=(2,2), pad=(3, 3),
-                                  no_bias=True, name="conv0", workspace=workspace)
-        body = mx.sym.BatchNorm(data=body, fix_gamma=False, eps=2e-5, momentum=bn_mom, name='bn0')
-        body = mx.sym.Activation(data=body, act_type='relu', name='relu0')
-        body = mx.symbol.Pooling(data=body, kernel=(3, 3), stride=(2,2), pad=(1,1), pool_type='max')
-    else:
-         raise ValueError("do not support {} yet".format(data_type))
+    body = mx.sym.Convolution(data=data, num_filter=filter_list[0], kernel=(7, 7), stride=(2,2), pad=(3, 3),
+                              no_bias=True, name="conv0", workspace=workspace)
+    body = mx.sym.BatchNorm(data=body, fix_gamma=False, eps=2e-5, momentum=bn_mom, name='bn0')
+    body = mx.sym.Activation(data=body, act_type='relu', name='relu0')
+    body = mx.sym.Pooling(data=body, kernel=(3, 3), stride=(2,2), pad=(1,1), pool_type='max')
     for i in range(num_stage):
         body = residual_unit(body, filter_list[i+1], (1 if i==0 else 2, 1 if i==0 else 2), False,
                              name='stage%d_unit%d' % (i + 1, 1), ibn=ibn, bottle_neck=bottle_neck, workspace=workspace,
@@ -143,3 +124,33 @@ def resnet(units, num_stage, filter_list, num_class, data_type, ibn, bottle_neck
     flat = mx.symbol.Flatten(data=pool1)
     fc1 = mx.symbol.FullyConnected(data=flat, num_hidden=num_class, name='fc1')
     return mx.symbol.SoftmaxOutput(data=fc1, name='softmax')
+
+def get_symbol(num_classes, num_layers, image_shape, conv_workspace=512, **kwargs):
+    nchannel, height, width = image_shape
+    if num_layers == 18:
+        units = [2, 2, 2, 2]
+    elif num_layers == 34:
+        units = [3, 4, 6, 3]
+    elif num_layers == 50:
+        units = [3, 4, 6, 3]
+    elif num_layers == 101:
+        units = [3, 4, 23, 3]
+    elif num_layers == 152:
+        units = [3, 8, 36, 3]
+    elif num_layers == 200:
+        units = [3, 24, 36, 3]
+    elif num_layers == 269:
+        units = [3, 30, 48, 8]
+    else:
+            raise ValueError("no experiments done on detph {}, you can do it youself".format(num_layers))
+    filter_list = [64, 256, 512, 1024, 2048] if num_layers >= 50 else [64, 64, 128, 256, 512]
+
+    return resnet(units       = units,
+                  num_stage   = 4, 
+                  filter_list = filter_list, 
+                  num_class   = num_classes, 
+                  ibn         = True,
+                  bottle_neck = True,
+                  workspace   = conv_workspace)
+
+    
