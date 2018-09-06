@@ -20,21 +20,24 @@ GLOBAL_LOCK = threading.Lock()
 ERROR_NUMBER = 0
 DOWNLOAD_NUMBER = 1
 FILE_NAME = str()
+SS_HOST = "nbxs-gate-io.qiniu.com" 
 
 
 def _init_():
     """
     Multi-threading downloader script
+    Update: 2018/09/04
 
     Change log:
-    2018/08/06      v1.4        optimized std out
-    2018/03/05      v1.3        fix bug
-    2018/02/27      v1.2        update saving mapping-file feature
-    2018/02/26      v1.1        support save as original basename
-    2017/11/23      v1.0        basic functions
+    2018/09/04      v1.5                support download via source station proxy
+    2018/08/06      v1.4                optimize std out
+    2018/03/05      v1.3                fix bug
+    2018/02/27      v1.2                update saving mapping-file feature
+    2018/02/26      v1.1                support save as original basename
+    2017/11/23      v1.0                basic functions
 
     Usage:
-        download_from_urls.py           <infile> <thread-number> [-b|--basename] 
+        download_from_urls.py           <infile> <thread-number> [-b|--basename -s|--source-station] 
                                         [--mapfile-path=str --date=str --start-index=int]
                                         [--download-path=str --prefix=str --suffix=str --ext=str]
         download_from_urls.py           -v|--version
@@ -48,6 +51,7 @@ def _init_():
         -h --help                       show this screen
         -v --version                    show script version
         -b --basename                   set to save as original basename
+        -s --source-station             set to download via source station proxy
         ------------------------------------------------------------------------------------------
         --date=str                      date mark in filename [default: 1123]
         --start-index=int               start index in filename [default: 0]
@@ -106,14 +110,20 @@ class prod_worker(threading.Thread):
 class cons_worker(threading.Thread):
     global GLOBAL_LOCK
 
-    def __init__(self, queue):
+    def __init__(self, queue, use_ss_dl=False):
         threading.Thread.__init__(self)
         self.queue = queue
+        self.use_ss_dl = use_ss_dl
 
     def download(self, url, output_path, err_num):
         try:
             # commands.getoutput('wget -O {} {}'.format(output_path, url))
-            if os.system('wget -q -O {} {}'.format(output_path, url)) != 0:
+            if self.use_ss_dl:
+                domain = url.split('/')[2]
+                cmd = 'curl {} -H "Host: {}" -o {} > /dev/null 2>&1 '.format(url.replace(domain, SS_HOST), domain, output_path)
+            else:
+                cmd = 'wget -q -O {} {}'.format(output_path, url)
+            if os.system(cmd) != 0:
                 print('=> download ERROR:', url)
                 err_num += 1
         except all as e:
@@ -167,7 +177,7 @@ def main():
     print('=> thread:', thread_prod.name, 'successfully started')
     time.sleep(1)
     for i in xrange(thread_count):
-        exec('thread_cons_{} = cons_worker(queue)'.format(i))
+        exec('thread_cons_{} = cons_worker(queue, use_ss_dl={})'.format(i, args['--source-station']))
         eval('thread_cons_{}.start()'.format(i))
     thread_prod.join()
     for i in xrange(thread_count):

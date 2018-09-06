@@ -29,7 +29,7 @@ def main():
     '''
     :params: /path/to/image/list /path/to/input/json /path/to/save/dir/ /path/to/catrgory/file /path/to/image/prefix [optinal]/path/to/alias/file
     '''
-    threshold = 0.5
+    threshold = 0.000000001
     cats = load_categories(sys.argv[4]) 
     class_names = cats
     if len(sys.argv) == 7:
