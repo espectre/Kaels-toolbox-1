@@ -1,7 +1,8 @@
 import argparse,logging,os
 import mxnet as mx
-from symbol.resnet_ibn_a import resnet
-assert 0
+from symbols.resnet_ibn_a import resnet
+
+ROOT_PATH = "/workspace/blued/pretrain_demo/"
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -22,25 +23,7 @@ def multi_factor_scheduler(begin_epoch, epoch_size, step=[30, 60, 90, 95, 115, 1
 
 
 def main():
-    if args.data_type == "cifar10":
-        args.aug_level = 1
-        args.num_classes = 10
-        # depth should be one of 110, 164, 1001,...,which is should fit (args.depth-2)%9 == 0
-        if((args.depth-2)%9 == 0 and args.depth >= 164):
-            per_unit = [(args.depth-2)/9]
-            filter_list = [16, 64, 128, 256]
-            bottle_neck = True
-        elif((args.depth-2)%6 == 0 and args.depth < 164):
-            per_unit = [(args.depth-2)/6]
-            filter_list = [16, 16, 32, 64]
-            bottle_neck = False
-        else:
-            raise ValueError("no experiments done on detph {}, you can do it youself".format(args.depth))
-        units = per_unit*3
-        symbol = resnet(units=units, num_stage=3, filter_list=filter_list, num_class=args.num_classes,
-                        data_type="cifar10", ibn=True, bottle_neck = bottle_neck, bn_mom=args.bn_mom, workspace=args.workspace,
-                        memonger=args.memonger)
-    elif args.data_type == "imagenet":
+    if args.data_type == "imagenet":
         args.num_classes = 1000
         if args.depth == 18:
             units = [2, 2, 2, 2]
@@ -59,63 +42,19 @@ def main():
         else:
             raise ValueError("no experiments done on detph {}, you can do it youself".format(args.depth))
         symbol = resnet(units=units, num_stage=4, filter_list=[64, 256, 512, 1024, 2048] if args.depth >=50
-                        else [64, 64, 128, 256, 512], num_class=args.num_classes, data_type="imagenet", ibn=True, bottle_neck = True
+                        else [64, 64, 128, 256, 512], num_class=args.num_classes, ibn=True, bottle_neck = True
                         if args.depth >= 50 else False, bn_mom=args.bn_mom, workspace=args.workspace,
                         memonger=args.memonger)
-    elif args.data_type == "vggface":
-        args.num_classes = 2613
-        if args.depth == 18:
-            units = [2, 2, 2, 2]
-        elif args.depth == 34:
-            units = [3, 4, 6, 3]
-        elif args.depth == 50:
-            units = [3, 4, 6, 3]
-        elif args.depth == 101:
-            units = [3, 4, 23, 3]
-        elif args.depth == 152:
-            units = [3, 8, 36, 3]
-        elif args.depth == 200:
-            units = [3, 24, 36, 3]
-        elif args.depth == 269:
-            units = [3, 30, 48, 8]
-        else:
-            raise ValueError("no experiments done on detph {}, you can do it youself".format(args.depth))
-        symbol = resnet(units=units, num_stage=4, filter_list=[64, 256, 512, 1024, 2048] if args.depth >=50
-                        else [64, 64, 128, 256, 512], num_class=args.num_classes, data_type="vggface", ibn= True, bottle_neck = True
-                        if args.depth >= 50 else False, bn_mom=args.bn_mom, workspace=args.workspace,
-                        memonger=args.memonger)
-    elif args.data_type == "msface":
-        args.num_classes = 79051
-        if args.depth == 18:
-            units = [2, 2, 2, 2]
-        elif args.depth == 34:
-            units = [3, 4, 6, 3]
-        elif args.depth == 50:
-            units = [3, 4, 6, 3]
-        elif args.depth == 101:
-            units = [3, 4, 23, 3]
-        elif args.depth == 152:
-            units = [3, 8, 36, 3]
-        elif args.depth == 200:
-            units = [3, 24, 36, 3]
-        elif args.depth == 269:
-            units = [3, 30, 48, 8]
-        else:
-            raise ValueError("no experiments done on detph {}, you can do it youself".format(args.depth))
-        symbol = resnet(units=units, num_stage=4, filter_list=[64, 256, 512, 1024, 2048] if args.depth >=50
-                        else [64, 64, 128, 256, 512], num_class=args.num_classes, data_type="msface", ibn= True, bottle_neck = True
-                        if args.depth >= 50 else False, bn_mom=args.bn_mom, workspace=args.workspace,
-                        memonger=args.memonger)
-
     else:
-         raise ValueError("do not support {} yet".format(args.data_type))
+        assert 0, 'Invalid data type'
+
     kv = mx.kvstore.create(args.kv_store)
     devs = mx.cpu() if args.gpus is None else [mx.gpu(int(i)) for i in args.gpus.split(',')]
     epoch_size = max(int(args.num_examples / args.batch_size / kv.num_workers), 1)
     begin_epoch = args.model_load_epoch if args.model_load_epoch else 0
-    if not os.path.exists("./model"):
-        os.mkdir("./model")
-    model_prefix = "model/resnet-ibn-a-{}-{}-{}".format(args.data_type, args.depth, kv.rank)
+    if not os.path.exists(os.path.join(ROOT_PATH, "./model")):
+        os.mkdir(os.path.join(ROOT_PATH, "./model"))
+    model_prefix = os.path.join(ROOT_PATH, "model/resnet-ibn-a-{}-{}-{}".format(args.data_type, args.depth, kv.rank))
     checkpoint = mx.callback.do_checkpoint(model_prefix)
     arg_params = None
     aux_params = None
@@ -128,7 +67,7 @@ def main():
     train = mx.io.ImageRecordIter(
         path_imgrec         = os.path.join(args.data_dir, "train.rec") if args.data_type == 'cifar10' else
                               os.path.join(args.data_dir, "train_256_q90.rec") if args.aug_level == 1
-                              else os.path.join(args.data_dir, "train_480_q90.rec") ,
+                              else os.path.join(args.data_dir, "train-480.rec") ,
         label_width         = 1,
         data_name           = 'data',
         label_name          = 'softmax_label',
@@ -151,7 +90,7 @@ def main():
         part_index          = kv.rank)
     val = mx.io.ImageRecordIter(
         path_imgrec         = os.path.join(args.data_dir, "val.rec") if args.data_type == 'cifar10' else
-                              os.path.join(args.data_dir, "val_256_q90.rec"),
+                              os.path.join(args.data_dir, "dev-256.rec"),
         label_width         = 1,
         data_name           = 'data',
         label_name          = 'softmax_label',
@@ -218,7 +157,7 @@ if __name__ == "__main__":
                         help='true means using memonger to save momory, https://github.com/dmlc/mxnet-memonger')
     parser.add_argument('--retrain', action='store_true', default=False, help='true means continue training')
     args = parser.parse_args()
-    hdlr = logging.FileHandler('./log/log-resnet-ibn-a-{}-{}-{}.log'.format(args.data_type, args.depth, 0))
+    hdlr = logging.FileHandler(os.path.join(ROOT_PATH, './log/log-resnet-ibn-a-{}-{}-{}.log'.format(args.data_type, args.depth, 0)))
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
     logging.info(args)
