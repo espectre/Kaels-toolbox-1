@@ -104,13 +104,19 @@ def generic_multi_gpu_test(model, img_list, categories, batch_size, input_shape,
             logging.debug('img_tmp.shape:{}'.format(img_tmp.shape))
             if center_crop:
                 img_ccr = np_img_center_crop(img_tmp, input_shape[1]) 
-                img_batch[idx] = mx.nd.array(img_ccr[np.newaxis, :])
+                if np.__version__.startswith('1.15'):
+                    img_batch[idx] = mx.nd.array(img_ccr)
+                else:
+                    img_batch[idx] = mx.nd.array(img_ccr[np.newaxis, :])
             elif multi_crop:
                 img_crs = np_img_multi_crop(img_tmp, input_shape[1], crop_number=multi_crop)
                 for idx_crop,crop in enumerate(img_crs):
-                    img_batch[idx_crop] = mx.nd.array(crop[np.newaxis, :])
+                    if np.__version__.startswith('1.15'):
+                        img_batch[idx_crop] = mx.nd.array(crop)
+                    else:
+                        img_batch[idx_crop] = mx.nd.array(crop[np.newaxis, :])
             else:
-                if np.__version__ == '1.15.0':
+                if np.__version__.startswith('1.15'):
                     img_batch[idx] = mx.nd.array(img_tmp)
                 else:
                     img_batch[idx] = mx.nd.array(img_tmp[np.newaxis, :])
