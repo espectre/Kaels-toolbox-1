@@ -39,11 +39,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-06-07 16:43:27
+    Update: 2018-09-12
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/09/12  v4.1                support directly image loading
     2018/06/07  v4.0                code-refactoring 
     2018/03/12  v3.2                support freeze feature layer weights 
     2018/02/28  v3.1                support svm classifier 
@@ -124,7 +125,8 @@ def main():
     num_gpus = len(cfg.GPU_IDX) 
     batch_size = batch_per_gpu * num_gpus
     log_interval = cfg.LOG_INTERVAL
-    train, dev = inst_iterators(cfg.TRAIN_REC, cfg.DEV_REC, batch_size=batch_size, data_shape=cfg.INPUT_SHAPE, resize=cfg.RESIZE_SHAPE, resize_scale=cfg.RESIZE_SCALE, use_svm_label=cfg.USE_SVM_LABEL)
+    data_train, data_dev = (cfg.TRAIN_REC, cfg.DEV_REC) if cfg.USE_REC else (cfg.TRAIN_LST, cfg.DEV_LST)
+    train, dev = inst_iterators(data_train, data_dev, batch_size=batch_size, data_shape=cfg.INPUT_SHAPE, resize=cfg.RESIZE_SHAPE, resize_scale=cfg.RESIZE_SCALE, use_svm_label=cfg.USE_SVM_LABEL)
     
     # io testing mode
     if cfg.TEST_IO_MODE:

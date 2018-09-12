@@ -30,8 +30,8 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     '''
     Instantiate specified training and developing data iterators
     :params:
-    data_train      training iterator
-    data_dev        developing iterator
+    data_train      training rec/lst
+    data_dev        developing rec/lst
     batch_size      mini batch size, sum of all device
     data_shape      input shape
     resize          resize shorter edge of (train,dev) data, -1 means no resize
@@ -52,56 +52,130 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     label_name = 'softmax_label' if not use_svm_label else 'svm_label'
 
     # build iterators
-    train = mx.io.ImageRecordIter(
-        dtype=cfg.TRAIN.DATA_TYPE,
-        path_imgrec=data_train,
-        preprocess_threads=cfg.TRAIN.PROCESS_THREAD,
-        data_name='data',
-        label_name=label_name,
-        label_width=cfg.TRAIN.LABEL_WIDTH,
-        data_shape=data_shape,
-        batch_size=batch_size,
-        resize=resize_train,
-        max_random_scale=max_random_scale,
-        min_random_scale=min_random_scale,
-        shuffle=cfg.TRAIN.SHUFFLE,
-        rand_crop=cfg.TRAIN.RAND_CROP,
-        rand_mirror=cfg.TRAIN.RAND_MIRROR,
-        max_rotate_angle=cfg.TRAIN.MAX_ROTATE_ANGLE,
-        max_aspect_ratio=cfg.TRAIN.MAX_ASPECT_RATIO,
-        max_shear_ratio=cfg.TRAIN.MAX_SHEAR_RATIO,
-        random_h=cfg.TRAIN.RANDOM_H,
-        random_s=cfg.TRAIN.RANDOM_S,
-        random_l=cfg.TRAIN.RANDOM_L,
-        mean_r=mean_r,
-        mean_g=mean_g,
-        mean_b=mean_b,
-        std_r=std_r,
-        std_g=std_g,
-        std_b=std_b
-        )
-    val = mx.io.ImageRecordIter(
-        dtype=cfg.TRAIN.DATA_TYPE,
-        path_imgrec=data_dev,
-        preprocess_threads=cfg.TRAIN.PROCESS_THREAD,
-        data_name='data',
-        label_name=label_name,
-        label_width=cfg.TRAIN.LABEL_WIDTH,
-        batch_size=batch_size,
-        data_shape=data_shape,
-        resize=resize_dev,
-        shuffle=False,
-        rand_crop=False,
-        rand_mirror=False,
-        mean_r=mean_r,
-        mean_g=mean_g,
-        mean_b=mean_b,
-        std_r=std_r,
-        std_g=std_g,
-        std_b=std_b
-        )
+    if cfg.TRAIN.USE_REC:
+        logging.info("Creating recordio iterators")
+        train = mx.io.ImageRecordIter(
+                dtype               = cfg.TRAIN.DATA_TYPE,
+                path_imgrec         = data_train,
+                preprocess_threads  = cfg.TRAIN.PROCESS_THREAD,
+                data_name           = 'data',
+                label_name          = label_name,
+                label_width         = cfg.TRAIN.LABEL_WIDTH,
+                data_shape          = data_shape,
+                batch_size          = batch_size,
+                resize              = resize_train,
+                max_random_scale    = max_random_scale,
+                min_random_scale    = min_random_scale,
+                shuffle             = cfg.TRAIN.SHUFFLE,
+                rand_crop           = cfg.TRAIN.RAND_CROP,
+                rand_mirror         = cfg.TRAIN.RAND_MIRROR,
+                max_rotate_angle    = cfg.TRAIN.MAX_ROTATE_ANGLE,
+                max_aspect_ratio    = cfg.TRAIN.MAX_ASPECT_RATIO,
+                max_shear_ratio     = cfg.TRAIN.MAX_SHEAR_RATIO,
+                brightness          = cfg.TRAIN.BRIGHTNESS_JITTER,
+                contrast            = cfg.TRAIN.CONTRAST_JITTER,
+                saturation          = TRAIN.SATURATION_JITTER,
+                hue                 = TRAIN.HUE_JITTER,
+                pca_noise           = TRAIN.PCA_NOISE,
+                random_h            = cfg.TRAIN.RANDOM_H,
+                random_s            = cfg.TRAIN.RANDOM_S,
+                random_l            = cfg.TRAIN.RANDOM_L,
+                mean_r              = mean_r,
+                mean_g              = mean_g,
+                mean_b              = mean_b,
+                std_r               = std_r,
+                std_g               = std_g,
+                std_b               = std_b,
+                inter_method        = cfg.TRAIN.INTERPOLATION_METHOD
+                )
+        dev = mx.io.ImageRecordIter(
+                dtype               = cfg.TRAIN.DATA_TYPE,
+                path_imgrec         = data_dev,
+                preprocess_threads  = cfg.TRAIN.PROCESS_THREAD,
+                data_name           = 'data',
+                label_name          = label_name,
+                label_width         = cfg.TRAIN.LABEL_WIDTH,
+                batch_size          = batch_size,
+                data_shape          = data_shape,
+                resize              = resize_dev,
+                shuffle             = False,
+                rand_crop           = False,
+                rand_mirror         = False,
+                mean_r              = mean_r,
+                mean_g              = mean_g,
+                mean_b              = mean_b,
+                std_r               = std_r,
+                std_g               = std_g,
+                std_b               = std_b,
+                inter_method        = cfg.TRAIN.INTERPOLATION_METHOD
+                )
+    else:
+        logging.info("Creating image iterators")
+        # set decoding thread number
+        os.environ['MXNET_CPU_WORKER_NTHREADS'] = str(cfg.TRAIN.PROCESS_THREAD) 
+        # set rand_crop and rand_resize as default, and append separately
+        aug_list_train = mx.image.CreateAugmenter(
+                data_shape          = data_shape,
+                resize              = resize_train,
+                rand_mirror         = cfg.TRAIN.RAND_MIRROR,
+                mean                = np.asarray(mean),
+                std                 = np.asarray(std),
+                brightness          = cfg.TRAIN.BRIGHTNESS_JITTER,
+                contrast            = cfg.TRAIN.CONTRAST_JITTER,
+                saturation          = cfg.TRAIN.SATURATION_JITTER,
+                hue                 = cfg.TRAIN.HUE_JITTER,
+                pca_noise           = cfg.TRAIN.PCA_NOISE,
+                inter_method        = cfg.TRAIN.INTERPOLATION_METHOD
+                )
+        
+        if cfg.TRAIN.RAND_CROP and min_random_scale != 1: 
+            aug_list_train.append(mx.image.RandomSizedCropAug(
+                    (data_shape[2],data_shape[1]), 
+                    min_random_scale**2, 
+                    (1-cfg.TRAIN.MAX_ASPECT_RATIO, 1+cfg.TRAIN.MAX_ASPECT_RATIO), 
+                    cfg.TRAIN.INTERPOLATION_METHOD)) 
+        elif cfg.TRAIN.RAND_CROP:
+            aug_list_train.append(mx.image.RandomCropAug(
+                    (data_shape[2],data_shape[1]), 
+                    cfg.TRAIN.INTERPOLATION_METHOD))
+
+        # set rand_crop and rand_resize as default to use center-crop
+        aug_list_dev = mx.image.CreateAugmenter(
+                data_shape          = data_shape,
+                resize              = resize_dev,
+                mean                = np.asarray(mean),
+                std                 = np.asarray(std),
+                inter_method        = cfg.TRAIN.INTERPOLATION_METHOD
+                )
+                
+        train = mx.image.ImageIter(
+                dtype               = cfg.TRAIN.DATA_TYPE,
+                path_imglist        = data_train,
+                data_name           = 'data',
+                label_name          = label_name,
+                label_width         = cfg.TRAIN.LABEL_WIDTH,
+                data_shape          = data_shape,
+                batch_size          = batch_size,
+                path_root           = cfg.TRAIN.TRAIN_IMG_PREFIX,
+                shuffle             = cfg.TRAIN.SHUFFLE,
+                last_batch_handle   = cfg.TRAIN.LAST_BATCH_HANDLE,
+                aug_list            = aug_list_train
+                )
+        dev = mx.image.ImageIter(
+                dtype               = cfg.TRAIN.DATA_TYPE,
+                path_imglist        = data_dev,
+                data_name           = 'data',
+                label_name          = label_name,
+                label_width         = cfg.TRAIN.LABEL_WIDTH,
+                data_shape          = data_shape,
+                batch_size          = batch_size,
+                path_root           = cfg.TRAIN.DEV_IMG_PREFIX,
+                shuffle             = cfg.TRAIN.SHUFFLE,
+                last_batch_handle   = cfg.TRAIN.LAST_BATCH_HANDLE,
+                aug_list            = aug_list_dev
+                )
     logging.info("Data iters created successfully")
-    return train, val
+    return train, dev 
 
 
 def np_img_preprocessing(img, as_float=True, **kwargs):
