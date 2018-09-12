@@ -130,18 +130,20 @@ def image_encode(args, i, item, q_out):
         return
     if args.center_crop:
         if img.shape[0] > img.shape[1]:
-            margin = (img.shape[0] - img.shape[1]) / 2;
+            margin = int(float(img.shape[0] - img.shape[1]) / 2);
             img = img[margin:margin + img.shape[1], :]
         else:
-            margin = (img.shape[1] - img.shape[0]) / 2;
+            margin = int(float(img.shape[1] - img.shape[0]) / 2);
             img = img[:, margin:margin + img.shape[0]]
     if args.resize:
         if args.force_resize:
             newsize = (args.resize,args.resize)
         else:
             if img.shape[0] > img.shape[1]:
+                # newsize = (args.resize, int(float(img.shape[0] * args.resize) / img.shape[1]))
                 newsize = (args.resize, img.shape[0] * args.resize / img.shape[1])
             else:
+                # newsize = (int(float(img.shape[1] * args.resize / img.shape[0])), args.resize)
                 newsize = (img.shape[1] * args.resize / img.shape[0], args.resize)
         img = cv2.resize(img, newsize)
     try:
