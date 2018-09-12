@@ -1,3 +1,5 @@
+# Modified from: https://github.com/bruinxiong/IBN-Net.mxnet
+
 import argparse,logging,os
 import mxnet as mx
 from symbols.resnet_ibn_a import resnet
