@@ -192,7 +192,6 @@ __C.TRAIN.DATA_TYPE = None
 __C.TRAIN.SHUFFLE = True 
 __C.TRAIN.RAND_CROP = True
 __C.TRAIN.RAND_MIRROR = True 
-__C.TRAIN.USE_SVM_LABEL = False 
 __C.TRAIN.LAST_BATCH_HANDLE = "pad" 
 
 # ---- optimizer hyper params ----
