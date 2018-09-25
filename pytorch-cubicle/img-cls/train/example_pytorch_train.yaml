@@ -1,30 +1,59 @@
 TRAIN:
   LOG_PATH: train/tmp.log
+  OUTPUT_MODEL_PREFIX: train/tmp/tmp
   TRAIN_LST: /workspace/dataset/warden/imagenet/imagenet-1k/Lists/devkit-ILSVRC2015/annotations/ILSVRC2015_cls_train_gt_shifted.lst
   DEV_LST: /workspace/dataset/warden/imagenet/imagenet-1k/Lists/devkit-ILSVRC2015/annotations/ILSVRC2015_cls_val_gt_shifted.lst
   TRAIN_IMG_PREFIX: /workspace/dataset/warden/imagenet/imagenet-1k/Image/ILSVRC2012_img_train/
   DEV_IMG_PREFIX: /workspace/dataset/warden/imagenet/imagenet-1k/Image/ILSVRC2012_img_val/
 
-  PROCESS_THREAD: 2
+  PROCESS_THREAD: 8
   USE_GPU: True
   GPU_IDX: [0,1,2,3,4,5,6,7]
-  BATCH_SIZE: 64
-  LOG_INTERVAL: 40
+  BATCH_SIZE: 32 
+  LOG_INTERVAL: 10 
+  LOG_NET_PARAMS: True
   PRE_EVALUATION: False
-  MAX_EPOCHS: 30
+  MAX_EPOCHS: 130 
+  NETWORK: resnet18
 
   INPUT_SHAPE: (3, 224, 224)
   MEAN_RGB: [123.68, 116.779, 103.939]
   STD_RGB: [58.395, 57.12, 57.375]
-
+  COLOR_JITTER: True
+  CJ_BRIGHTNESS: 0.1
+  CJ_CONTRAST: 0.1
+  CJ_SATURATION: 0.1
+  CJ_HUE: 0.1
+  RANDOM_AFFINE: True 
+  RA_DEGREES: 10  # (-10, 10)
+  RA_TRANSLATE: (0.1, 0.1)    # horizontal, vertical
+  RA_SCALE: (1, 1)   # 
+  RA_SHEAR: 10    # (-10, 10) 
+  RA_RESAMPLE: False  # PIL.Image.NEAREST by default
+  RA_FILLCOLOR: 0
+  RANDOM_CROP: False
+  RANDOM_HFLIP: True 
+  RANDOM_VFLIP: False 
+  RANDOM_RESIZED_CROP: True 
+  RRC_SCALE: (0.08, 1.0)
+  RRC_RATIO: (0.75, 1.333333)
+  RRC_INTERPOLATION: 2
+  RANDOM_ROTATION: True 
+  RR_DEGREES: 10  # => (-10, 10)
+  RR_RESAMPLE: False  # PIL.Image.NEAREST by default
+  RR_EXPAND: False   # 
+  RR_CENTER: None    # rotate center by default
+  RESIZE: 0     # 0 means no img-level resize 
+  FORCE_RESIZE: False 
+  R_INTERPOLATION: 2
 
   OPTIMIZER: sgd
-  BASE_LR: 0.01
+  BASE_LR: 0.1
   LR_FACTOR: 0.1
-  STEP_EPOCHS: [10,15,25]
+  STEP_EPOCHS: [30, 60, 90, 110, 120]
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
 
-
-
-  
+  FINETUNE: True
+  FT:
+    PRETRAINED_MODEL_WEIGHTS: /workspace/northrend/imagenet/model/pretrain_models/resnet-18.pth

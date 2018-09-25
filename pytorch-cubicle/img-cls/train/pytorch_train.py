@@ -13,7 +13,7 @@ import logging,pprint,docopt
 import torch
 from torch.autograd import Variable
 import numpy as np
-import torchvision
+# import torchvision
 # from torchvision import datasets, models, transforms
 # import matplotlib.pyplot as plt
 from PIL import ImageFile
@@ -22,10 +22,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 cur_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(cur_path,'../lib'))
 from io_util import inst_data_loader 
-# from net_util import *
+from net_util import get_avail_models 
 from train_util import generic_train, LRScheduler 
-# from cam_util import *
-import model as extra_models 
 from config import merge_cfg_from_file
 from config import cfg as _
 cfg = _.TRAIN
@@ -92,50 +90,45 @@ def tensorboard():
 
 
 def main():
-    # default_model_names = sorted(name for name in torchvision.models.__dict__
-    # if name.islower() and not name.startswith("__")
-    # and callable(torchvision.models.__dict__[name]))
-    # # print(default_model_names)
-
-    # extra_models_names = sorted(name for name in extra_models.__dict__
-    # if name.islower() and not name.startswith("__")
-    # and callable(extra_models.__dict__[name]))
-    # # print(extra_models_names)
-
-    available_models = torchvision.models
-    for name in extra_models.__dict__:
-        if name.islower() and not name.startswith("__") and callable(extra_models.__dict__[name]):
-            available_models.__dict__[name] = extra_models.__dict__[name]
-
-    available_models_names = sorted(name for name in available_models.__dict__
-    if name.islower() and not name.startswith("__")
-    and callable(available_models.__dict__[name]))
-    # pprint.pprint(available_models_names)
+    logger.info('Configuration:')
+    logger.info(pprint.pformat(_))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(x) for x in cfg.GPU_IDX])
+    num_gpus = len(cfg.GPU_IDX)
+    batch_size = num_gpus * cfg.BATCH_SIZE  # on all gpus
     use_cuda = torch.cuda.is_available()
     pin_memory = True
 
-    # model = available_models.__dict__['resnet18'](pretrained=False)
-    # model = available_models.resnext50(baseWidth=32,cardinality=4)
-    model = available_models.resnet18(pretrained=True)
+    available_models, available_models_names = get_avail_models()
+    network = cfg.NETWORK
+    if network not in available_models_names:
+        logger.error("Network architecture not supported, should be in:\n{}".format(available_models_names))
+        logger.info("Aborting...")
+        return 0
+    model = eval("available_models.{}()".format(cfg.NETWORK))
+    if cfg.LOG_NET_PARAMS:
+        logger.info('Network params:')
+        for name,params in model.named_parameters():
+            logger.info('{}: {}'.format(name, [x for x in params.size()]))
+        logger.info('---------------------')
+    model_weight = torch.load(cfg.FT.PRETRAINED_MODEL_WEIGHTS)
+    model.load_state_dict(model_weight)
 
     num_filters = model.fc.in_features
-    num_cls = 1000
+    num_cls = cfg.NUM_CLASSES 
     model.fc = torch.nn.Linear(num_filters, num_cls)
     criterion = torch.nn.CrossEntropyLoss()
     criterion.cuda()
     optimizer = torch.optim.SGD(model.parameters(), lr=cfg.BASE_LR, momentum=cfg.MOMENTUM, weight_decay=cfg.WEIGHT_DECAY)
 
     model = torch.nn.DataParallel(model).cuda()
-    # model.cuda()
     torch.backends.cudnn.benchmark = True
-    print(model)
 
     lr_scheduler = LRScheduler(cfg.BASE_LR, cfg.LR_FACTOR, cfg.STEP_EPOCHS, cfg.MAX_EPOCHS)
     
-    data_loader, data_size = inst_data_loader(cfg.TRAIN_LST, cfg.DEV_LST)
-    generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler) 
+    data_loader, data_size = inst_data_loader(cfg.TRAIN_LST, cfg.DEV_LST, batch_size)
+    logger.info("Start training:")
+    generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=cfg.MAX_EPOCHS) 
 
 
 if __name__ == '__main__':

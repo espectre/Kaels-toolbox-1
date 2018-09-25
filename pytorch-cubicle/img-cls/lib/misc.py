@@ -1,8 +1,3 @@
-'''Some helper functions for PyTorch, including:
-    - get_mean_and_std: calculate the mean and std value of dataset.
-    - msr_init: net parameter initialization.
-    - progress_bar: progress bar mimic xlua.progress.
-'''
 import errno
 import os
 import sys
@@ -14,7 +9,7 @@ import torch.nn as nn
 import torch.nn.init as init
 from torch.autograd import Variable
 
-__all__ = ['get_mean_and_std', 'init_params', 'mkdir_p', 'AverageMeter']
+__all__ = ['get_mean_and_std', 'init_params', 'mkdir_p', 'accuracy', 'AvgMeter']
 
 
 def get_mean_and_std(dataset):
@@ -57,7 +52,24 @@ def mkdir_p(path):
         else:
             raise
 
-class AverageMeter(object):
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
+class AvgMeter(object):
     """Computes and stores the average and current value
        Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262
     """

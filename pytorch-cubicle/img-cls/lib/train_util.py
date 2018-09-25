@@ -1,8 +1,11 @@
 import time
+import copy
+import logging
 import numpy as np
-import config as cfg
-import torch
 from torch.autograd import Variable
+from misc import AvgMeter, accuracy
+from io_util import save_checkpoint
+from config import cfg
 
 class LRScheduler:
     '''
@@ -38,113 +41,132 @@ class LRScheduler:
 def update_lr(optimizer, epoch, lr_scheduler):
     """Decay learning rate by a factor of DECAY_WEIGHT every lr_decay_epoch epochs."""
     lr = lr_scheduler.get_cur_lr(epoch) 
-    print('LR: {}'.format(lr))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     return optimizer
 
-def generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=100):
-    since = time.time()
+def inst_meter_dict(meter_list, meter_style='avg'): 
+    result = dict()
+    for meter in meter_list:
+        if meter_style == 'avg':
+            result[meter] = AvgMeter() 
+    return result
+
+def generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=100, use_gpu=True):
+    tic = time.time()
 
     best_model = model
     best_acc = 0.0
 
-    for epoch in range(max_epoch):
-        print('Epoch {}/{}'.format(epoch, max_epoch - 1))
-        print('-' * 10)
+    temporary = inst_meter_dict(['batch_time','data_time','losses','top_1_acc','top_5_acc'])
+    accumulator = inst_meter_dict(['losses','top_1_acc','top_5_acc'])
 
+    for epoch in range(max_epoch):
+        is_best = False
         # Each epoch has a training and validation phase
         for phase in ['train', 'dev']:
             if phase == 'train':
-                mode='train'
+                # mode='train'
                 optimizer = update_lr(optimizer, epoch, lr_scheduler)
+                logging.info('Training epoch [{}/{}]: learning rate {}'.format(epoch+1, max_epoch, optimizer.param_groups[0]['lr']))
                 model.train()  # Set model to training mode
             else:
-                mode='validation'
+                # mode='validation'
+                logging.info('Validation [{}/{}]:'.format(epoch+1, max_epoch))
                 model.eval()
 
-            running_loss = 0.0
-            running_corrects = 0
-
-            counter=0
             # Iterate over data.
+            toc = time.time()
             for batch_index, (inputs, labels) in enumerate(data_loader[phase]):
+                batch_size = inputs.size(0)
                 # print(inputs.size())
-                # print(type(labels))
-                # wrap them in Variable
-                # if use_gpu:
-                if True:
+                temporary['data_time'].update(time.time()-toc)
+                # wrap in Variable
+                if use_gpu:
                     try:
-                        inputs, labels = Variable(inputs.float().cuda()), Variable(labels.long().cuda())
+                        inputs, labels = Variable(inputs.float().cuda()), Variable(labels.long().cuda(async=True))
                     except:
-                        print(inputs,labels)
+                        logging.error(inputs,labels)
                 else:
                     inputs, labels = Variable(inputs), Variable(labels)
 
                 # Set gradient to zero to delete history of computations in previous epoch. Track operations so that differentiation can be done automatically.
                 optimizer.zero_grad()
                 outputs = model(inputs)
-                _, preds = torch.max(outputs.data, 1)
-                
                 loss = criterion(outputs, labels)
-                # print('loss done')                
-                # Just so that you can keep track that something's happening and don't feel like the program isn't running.
-                # if counter%10==0:
-                #     print("Reached iteration ",counter)
-                counter+=1
+                acc_1, acc_5 = accuracy(outputs.data, labels.data, topk=(1, 5))
+
+                # losses.update(loss.data[0], inputs.size(0))
+                temporary['losses'].update(loss.item(), batch_size)
+                temporary['top_1_acc'].update(acc_1.item(), batch_size)
+                temporary['top_5_acc'].update(acc_5.item(), batch_size)
+                accumulator['losses'].update(loss.item(), batch_size)
+                accumulator['top_1_acc'].update(acc_1.item(), batch_size)
+                accumulator['top_5_acc'].update(acc_5.item(), batch_size)
 
                 # backward + optimize only if in training phase
                 if phase == 'train':
-                    # print('loss backward')
+                    optimizer.zero_grad()
                     loss.backward()
-                    # print('done loss backward')
                     optimizer.step()
-                    # print('done optim')
-                # print evaluation statistics
-                try:
-                    if (batch_index+1) % cfg.TRAIN.LOG_INTERVAL == 0: 
-                        # print('({batch}/{size}) D: {data:.2f}s | B: {bt:.2f}s | T: {total:} | E: {eta:} | L: {loss:.3f} | t1: {top1: .3f} | t5: {top5: .3f}'.format(
-                        #         batch=batch_index + 1,
-                        #         size=data_size[phase],
-                        #         data=data_time.val,
-                        #         bt=batch_time.val,
-                        #         total=bar.elapsed_td,
-                        #         eta=bar.eta_td,
-                        #         loss=losses.avg,
-                        #         top1=top1.avg,
-                        #         top5=top5.avg,
-                        #         ))
-                        print 'batch: {}, loss: {}'.format(batch_index+1, running_loss/(batch_index+1))
-                    running_loss += loss.item()
-                    # print(labels.data)
-                    # print(preds)
-                    running_corrects += torch.sum(preds == labels.data)
-                    # print('running correct =',running_corrects)
-                except:
-                    print('unexpected error, could not calculate loss or do a sum.')
-            print('trying epoch loss')
-            epoch_loss = running_loss / data_size[phase]
-            epoch_acc = running_corrects.item() / float(data_size[phase])
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                phase, epoch_loss, epoch_acc))
 
+                    # print evaluation statistics
+                    temporary['batch_time'].update(time.time()-toc)
+                    toc = time.time()
+                    
+                    if (batch_index+1) % cfg.TRAIN.LOG_INTERVAL == 0: 
+                        logging.info('[{}/{}] [{}/{}] data: {:.4f}s | batch: {:.4f}s | loss: {:.4f} | top-1: {:.4f} | top-5: {:.4f}'.format(
+                            epoch+1, max_epoch,
+                            batch_index + 1, len(data_loader[phase]), 
+                            temporary['data_time'].val,
+                            temporary['batch_time'].val,
+                            temporary['losses'].avg,
+                            temporary['top_1_acc'].avg,
+                            temporary['top_5_acc'].avg,
+                            ))
+                        temporary['data_time'].reset()
+                        temporary['batch_time'].reset()
+                        temporary['losses'].reset()
+                        temporary['top_1_acc'].reset()
+                        temporary['top_5_acc'].reset()
+
+            logging.info('{}/{} loss: {:.4f} | top-1: {:.4f} | top-5: {:.4f}'.format(
+                        epoch+1, max_epoch,
+                        accumulator['losses'].avg,
+                        accumulator['top_1_acc'].avg,
+                        accumulator['top_5_acc'].avg
+                        ))
 
             # deep copy the model
-            if phase == 'val':
-                print('accuracy:', epoch_acc)
-                if USE_TENSORBOARD:
-                    foo.add_scalar_value('epoch_loss',epoch_loss,step=epoch)
-                    foo.add_scalar_value('epoch_acc',epoch_acc,step=epoch)
-                if epoch_acc > best_acc:
-                    best_acc = epoch_acc
-                    best_model = copy.deepcopy(model)
-                    print('new best accuracy = ',best_acc)
-    time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {:.0f}s'.format(
-        time_elapsed // 60, time_elapsed % 60))
-    print('Best val Acc: {:4f}'.format(best_acc))
-    print('returning and looping back')
-    return best_model
+            if phase == 'dev':
+                logging.info('Accuracy: {:.4f}'.format(accumulator['top_1_acc'].avg))
+                # if USE_TENSORBOARD:
+                #     foo.add_scalar_value('epoch_loss',epoch_loss,step=epoch)
+                #     foo.add_scalar_value('epoch_acc',epoch_acc,step=epoch)
+                if accumulator['top_1_acc'].avg > best_acc:
+                    is_best = True
+                    best_acc = accumulator['top_1_acc'].avg 
+                    # best_model = copy.deepcopy(model)
+                    logging.info('New best accuracy: {:.4f}'.format(best_acc))
+            accumulator['losses'].reset()
+            accumulator['top_1_acc'].reset()
+            accumulator['top_5_acc'].reset()
+        if (epoch+1)%cfg.TRAIN.SAVE_INTERVAL == 0:
+            save_checkpoint({
+                    'epoch': epoch+1,
+                    'model_state': model.state_dict(),
+                    'acc': accumulator['top_1_acc'].avg,
+                    # 'best_acc': best_acc,
+                    'optimizer_state' : optimizer.state_dict()},
+                    cfg.TRAIN.OUTPUT_MODEL_PREFIX,
+                    is_best=is_best 
+                    )
+            logging.info('Checkpoint saved to {}-{:0>4}.pth'.format(cfg.TRAIN.OUTPUT_MODEL_PREFIX, epoch+1))
+    time_elapsed = int(time.time() - tic)
+    logging.info('Training job complete in {:d}:{:0>2d}:{:d}'.format(
+        time_elapsed // 3600, (time_elapsed - 3600*(time_elapsed//3600)) // 60, (time_elapsed - 60*(time_elapsed//60))))
+    logging.info('Best val Acc: {:4f}'.format(best_acc))
+    return 0 
 
 
 if __name__ == '__main__':
