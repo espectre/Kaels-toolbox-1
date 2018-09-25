@@ -154,14 +154,14 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
         if (epoch+1)%cfg.TRAIN.SAVE_INTERVAL == 0:
             save_checkpoint({
                     'epoch': epoch+1,
-                    'model_state': model.state_dict(),
+                    'state_dict': model.state_dict(),
                     'acc': accumulator['top_1_acc'].avg,
                     # 'best_acc': best_acc,
-                    'optimizer_state' : optimizer.state_dict()},
+                    'optimizer' : optimizer.state_dict()},
                     cfg.TRAIN.OUTPUT_MODEL_PREFIX,
                     is_best=is_best 
                     )
-            logging.info('Checkpoint saved to {}-{:0>4}.pth'.format(cfg.TRAIN.OUTPUT_MODEL_PREFIX, epoch+1))
+            logging.info('Checkpoint saved to {}-{:0>4}.pth.tar'.format(cfg.TRAIN.OUTPUT_MODEL_PREFIX, epoch+1))
     time_elapsed = int(time.time() - tic)
     logging.info('Training job complete in {:d}:{:0>2d}:{:d}'.format(
         time_elapsed // 3600, (time_elapsed - 3600*(time_elapsed//3600)) // 60, (time_elapsed - 60*(time_elapsed//60))))

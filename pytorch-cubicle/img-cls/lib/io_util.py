@@ -5,8 +5,10 @@ import numpy as np
 from torchvision import transforms
 from torch.utils import data as pth_data
 from torch import save as t_save
+from torch import load as t_load
 from PIL import Image
 from config import cfg
+from collections import OrderedDict
 
 class DummyDataset(pth_data.dataset.Dataset):
     def __init__(self, lst_path, trans_list, img_path_prefix=str(), delimiter=' '):
@@ -159,12 +161,26 @@ def inst_data_loader(data_train, data_dev, batch_size):
     return data_loader, data_size
 
 
+def load_checkpoint(model_file, is_tar=False):
+    '''
+    '''
+    _state_dict = t_load(model_file)
+    state_dict = _state_dict['state_dict'] if is_tar else _state_dict
+    if cfg.TRAIN.FT.RENAME_STATE_DICT:
+        renamed_state_dict = OrderedDict((k.replace('module.',''), v) for k, v in state_dict.viewitems())
+        return renamed_state_dict
+        # for key in state_dict:
+        #     state_dict[key.replace('module','')] = state_dict[key]
+        #     del state_dict[key]
+    return state_dict 
+
+
 def save_checkpoint(state, model_prefix, is_best=False):
     '''
-        saved dict: {"epoch":, "model_state":, "acc":, "optimizer_state":} 
+        saved dict: {"epoch":, "state_dict":, "acc":, "optimizer":} 
     '''
-    file_path = '{}-{:0>4}.pth'.format(model_prefix, state["epoch"])
-    best_path = '{}-accpeak.pth'.format(model_prefix)
+    file_path = '{}-{:0>4}.pth.tar'.format(model_prefix, state["epoch"])
+    best_path = '{}-accpeak.pth.tar'.format(model_prefix)
     t_save(state, file_path)
     if is_best:
         shutil.copyfile(file_path, best_path) 

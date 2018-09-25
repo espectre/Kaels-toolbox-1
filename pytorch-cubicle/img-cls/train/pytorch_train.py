@@ -11,7 +11,6 @@ import sys, os, time, math, re, copy
 import logging,pprint,docopt
 
 import torch
-from torch.autograd import Variable
 import numpy as np
 # import torchvision
 # from torchvision import datasets, models, transforms
@@ -21,8 +20,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(cur_path,'../lib'))
-from io_util import inst_data_loader 
-from net_util import get_avail_models 
+from io_util import inst_data_loader, load_checkpoint 
+from net_util import get_avail_models, init_model 
 from train_util import generic_train, LRScheduler 
 from config import merge_cfg_from_file
 from config import cfg as _
@@ -38,11 +37,13 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-09-13
+    Update: 2018-09-25
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/09/25      v1.1              support finetune & scratch training
+                                      support xavier initialization
     2018/09/13      v1.0              basic functions 
 
     Usage:
@@ -96,33 +97,27 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(x) for x in cfg.GPU_IDX])
     num_gpus = len(cfg.GPU_IDX)
     batch_size = num_gpus * cfg.BATCH_SIZE  # on all gpus
-    use_cuda = torch.cuda.is_available()
+    # use_cuda = torch.cuda.is_available()
     pin_memory = True
 
     available_models, available_models_names = get_avail_models()
-    network = cfg.NETWORK
-    if network not in available_models_names:
+    if cfg.NETWORK not in available_models_names:
         logger.error("Network architecture not supported, should be in:\n{}".format(available_models_names))
         logger.info("Aborting...")
         return 0
-    model = eval("available_models.{}()".format(cfg.NETWORK))
+    model = init_model(available_models) 
     if cfg.LOG_NET_PARAMS:
         logger.info('Network params:')
         for name,params in model.named_parameters():
             logger.info('{}: {}'.format(name, [x for x in params.size()]))
         logger.info('---------------------')
-    model_weight = torch.load(cfg.FT.PRETRAINED_MODEL_WEIGHTS)
-    model.load_state_dict(model_weight)
 
-    num_filters = model.fc.in_features
-    num_cls = cfg.NUM_CLASSES 
-    model.fc = torch.nn.Linear(num_filters, num_cls)
     criterion = torch.nn.CrossEntropyLoss()
     criterion.cuda()
     optimizer = torch.optim.SGD(model.parameters(), lr=cfg.BASE_LR, momentum=cfg.MOMENTUM, weight_decay=cfg.WEIGHT_DECAY)
 
-    model = torch.nn.DataParallel(model).cuda()
-    torch.backends.cudnn.benchmark = True
+    if cfg.USE_GPU:
+        torch.backends.cudnn.benchmark = True
 
     lr_scheduler = LRScheduler(cfg.BASE_LR, cfg.LR_FACTOR, cfg.STEP_EPOCHS, cfg.MAX_EPOCHS)
     
