@@ -130,7 +130,7 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
                         temporary['top_1_acc'].reset()
                         temporary['top_5_acc'].reset()
 
-            logging.info('{}/{} loss: {:.4f} | top-1: {:.4f} | top-5: {:.4f}'.format(
+            logging.info('epoch: {}/{} loss: {:.4f} | top-1: {:.4f} | top-5: {:.4f}'.format(
                         epoch+1, max_epoch,
                         accumulator['losses'].avg,
                         accumulator['top_1_acc'].avg,
@@ -139,7 +139,7 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
 
             # deep copy the model
             if phase == 'dev':
-                logging.info('Accuracy: {:.4f}'.format(accumulator['top_1_acc'].avg))
+                logging.info('Current accuracy: {:.4f}'.format(accumulator['top_1_acc'].avg))
                 # if USE_TENSORBOARD:
                 #     foo.add_scalar_value('epoch_loss',epoch_loss,step=epoch)
                 #     foo.add_scalar_value('epoch_acc',epoch_acc,step=epoch)

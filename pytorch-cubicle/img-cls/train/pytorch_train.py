@@ -37,11 +37,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-09-25
+    Update: 2018-09-26
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/09/26      v1.2              optimize logging info 
     2018/09/25      v1.1              support finetune & scratch training
                                       support xavier initialization
     2018/09/13      v1.0              basic functions 
