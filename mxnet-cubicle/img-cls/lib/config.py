@@ -207,7 +207,7 @@ __C.TRAIN.NUM_CLASSES = 1000
 __C.TRAIN.USE_SOFTMAX = True 
 __C.TRAIN.USE_SVM = False 
 __C.TRAIN.SVM_LOSS = "l2" 
-__C.TRAIN.SVM_REG_COEFF = 1 
+__C.TRAIN.SVM_REG_COEFF = 1.0 
 
 # ---- alternately training setting ----
 __C.TRAIN.ALTERNATE = False 
