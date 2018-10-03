@@ -12,6 +12,9 @@ import numpy as np
 from collections import namedtuple
 from io_hybrid import np_img_preprocessing,np_img_center_crop,np_img_multi_crop
 from config import cfg
+import multiprocessing
+import functools
+import random
 
 
 def _get_filename_with_parents(filepath, level=1):
@@ -19,6 +22,41 @@ def _get_filename_with_parents(filepath, level=1):
     for i in range(level + 1):
         common = os.path.dirname(common)
     return os.path.relpath(filepath, common)
+
+
+def _image_processor(img, ex):
+    error_img = None
+    try:
+        img_read = cv2.imread(img)
+        if np.shape(img_read) == tuple():
+            raise empty_image
+    except:
+        img_read = np.zeros((ex['input_shape'][1], ex['input_shape'][2], ex['input_shape'][0]), dtype=np.uint8)
+        if ex['base_name']:
+            error_img = os.path.basename(img)
+        else:
+            error_img = _get_filename_with_parents(img, level=ex['level'])
+        logging.error('Image error: {}, result will be deprecated!'.format(img))
+    img_tmp = np_img_preprocessing(img_read, **ex['img_preproc_kwargs'])
+
+    if ex['center_crop']:
+        img_ccr = np_img_ex['center_crop'](img_tmp, ex['input_shape'][1]) 
+        if np.__version__.startswith('1.15'):
+            return mx.nd.array(img_ccr), error_img
+        else:
+            return mx.nd.array(img_ccr[np.newaxis, :]), error_img
+    elif ex['multi_crop']:
+        img_crs = np_img_ex['multi_crop'](img_tmp, ex['input_shape'][1], crop_number=ex['multi_crop'])
+        for idx_crop,crop in enumerate(img_crs):
+            if np.__version__.startswith('1.15'):
+                return [mx.nd.array(crop) for crop in img_crs], error_img 
+            else:
+                return [mx.nd.array(crop[np.newaxis, :]) for crop in img_crs], error_img 
+    else:
+        if np.__version__.startswith('1.15'):
+            return mx.nd.array(img_tmp), error_img
+        else:
+            return mx.nd.array(img_tmp[np.newaxis, :]), error_img
 
 
 def infer_one_batch(model, categories, data_batch, img_list, base_name=True, multi_crop_ave=False):
@@ -71,6 +109,8 @@ def generic_multi_gpu_test(model, img_list, categories, batch_size, input_shape,
     err_num = 0
     multi_crop_ave = True if multi_crop else False
     img_num = len(img_list)
+    proc_pool = multiprocessing.Pool(cfg.TEST.PROCESS_NUM)
+    logging.info("Processing images with {} procs".format(cfg.TEST.PROCESS_NUM))
     while(img_list):
         count += 1
         # list of one batch data
@@ -88,40 +128,79 @@ def generic_multi_gpu_test(model, img_list, categories, batch_size, input_shape,
         # process one data batch
         tic = time.time()
         img_batch = mx.nd.array(np.zeros((batch_size, input_shape[0], input_shape[1], input_shape[2]))) 
-        for idx,img in enumerate(buff_list):
-            try:
-                img_read = cv2.imread(img)
-                if np.shape(img_read) == tuple():
-                    raise empty_image
-            except:
-                img_read = np.zeros((input_shape[1], input_shape[2], input_shape[0]), dtype=np.uint8)
-                if base_name:
-                    error_list.append(os.path.basename(img))
-                else:
-                    error_list.append(_get_filename_with_parents(img, level=level))
-                logging.error('Image error: {}, result will be deprecated!'.format(img))
-            img_tmp = np_img_preprocessing(img_read, **img_preproc_kwargs)
-            logging.debug('img_tmp.shape:{}'.format(img_tmp.shape))
-            if center_crop:
-                img_ccr = np_img_center_crop(img_tmp, input_shape[1]) 
-                if np.__version__.startswith('1.15'):
-                    img_batch[idx] = mx.nd.array(img_ccr)
-                else:
-                    img_batch[idx] = mx.nd.array(img_ccr[np.newaxis, :])
-            elif multi_crop:
-                img_crs = np_img_multi_crop(img_tmp, input_shape[1], crop_number=multi_crop)
-                for idx_crop,crop in enumerate(img_crs):
-                    if np.__version__.startswith('1.15'):
-                        img_batch[idx_crop] = mx.nd.array(crop)
+        # timers = [0 for x in range(3)]
+        # tic_0 = time.time()
+        # -------------- single proc --------------
+        if cfg.TEST.PROCESS_NUM == 1:
+            for idx,img in enumerate(buff_list):
+                # tic_1 = time.time()
+                try:
+                    img_read = cv2.imread(img)
+                    if np.shape(img_read) == tuple():
+                        raise empty_image
+                except:
+                    img_read = np.zeros((input_shape[1], input_shape[2], input_shape[0]), dtype=np.uint8)
+                    if base_name:
+                        error_list.append(os.path.basename(img))
                     else:
-                        img_batch[idx_crop] = mx.nd.array(crop[np.newaxis, :])
-            else:
-                if np.__version__.startswith('1.15'):
-                    img_batch[idx] = mx.nd.array(img_tmp)
+                        error_list.append(_get_filename_with_parents(img, level=level))
+                    logging.error('Image error: {}, result will be deprecated!'.format(img))
+                # timers[0]+=(time.time()-tic_1)
+                # tic_2 = time.time()
+                img_tmp = np_img_preprocessing(img_read, **img_preproc_kwargs)
+                # print('improc:',time.time()-tic_2)
+                # timers[1]+=(time.time()-tic_2)
+                logging.debug('img_tmp.shape:{}'.format(img_tmp.shape))
+                # tic_3 = time.time()
+                if center_crop:
+                    img_ccr = np_img_center_crop(img_tmp, input_shape[1]) 
+                    if np.__version__.startswith('1.15'):
+                        img_batch[idx] = mx.nd.array(img_ccr)
+                    else:
+                        img_batch[idx] = mx.nd.array(img_ccr[np.newaxis, :])
+                elif multi_crop:
+                    img_crs = np_img_multi_crop(img_tmp, input_shape[1], crop_number=multi_crop)
+                    for idx_crop,crop in enumerate(img_crs):
+                        if np.__version__.startswith('1.15'):
+                            img_batch[idx_crop] = mx.nd.array(crop)
+                        else:
+                            img_batch[idx_crop] = mx.nd.array(crop[np.newaxis, :])
                 else:
-                    img_batch[idx] = mx.nd.array(img_tmp[np.newaxis, :])
+                    if np.__version__.startswith('1.15'):
+                        img_batch[idx] = mx.nd.array(img_tmp)
+                    else:
+                        img_batch[idx] = mx.nd.array(img_tmp[np.newaxis, :])
+                # timers[2]+=(time.time()-tic_3)
+            # print('batch_timer:',timers)
+            # print('batch:',time.time()-tic_0)
+
+        # -------------- multi proc ---------------
+        elif cfg.TEST.PROCESS_NUM > 1:
+            extra_args = {
+                'input_shape': input_shape, 
+                'img_preproc_kwargs': img_preproc_kwargs, 
+                'level': level, 
+                'base_name': base_name, 
+                'center_crop': center_crop, 
+                'multi_crop': multi_crop
+            }
+            # tic_1 = time.time()
+            processed_tuples = proc_pool.map(functools.partial(_image_processor, ex=extra_args), buff_list)
+            # timers[0]+=(time.time()-tic_1)
+            # tic_2 = time.time()
+            processed_imgs = [x[0] for x in processed_tuples]
+            error_list = [x[1] for x in processed_tuples if x[1]]
+            for idx,img in enumerate(processed_imgs):
+                img_batch[idx] = img
+            # timers[1]+=(time.time()-tic_2)
+        # print('batch_timer:',timers)
+        # -----------------------------------------
+        # tic_4 = time.time()
         buff_result = infer_one_batch(model, categories, img_batch, buff_list, base_name=True, multi_crop_ave=multi_crop_ave)
         toc = time.time()
+        # timers[2]+=(time.time()-tic_4)
+        # print('batch_infer:',time.time()-tic_4)
+        # print('FLAG:{},{},{}'.format(timers[0],timers[1],timers[2]))
         timer+=(toc-tic)
         for buff in buff_result:
             result[buff["File Name"]] = buff

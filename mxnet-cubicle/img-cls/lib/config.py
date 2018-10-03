@@ -257,6 +257,7 @@ __C.TEST.MODEL_EPOCH = 0
 __C.TEST.KV_STORE = b"device" 
 __C.TEST.USE_GPU = True 
 __C.TEST.GPU_IDX = [0]     # only single gpu supported for now
+__C.TEST.PROCESS_NUM = 1 
 __C.TEST.MUTABLE_IMAGES_TEST = False
 __C.TEST.BATCH_SIZE = 1 
 __C.TEST.INPUT_SHAPE = (3, 224, 224)
