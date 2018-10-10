@@ -6,17 +6,11 @@
 # for pytorch image classification
 #
 
-from __future__ import print_function, division
+from __future__ import print_function
 import sys, os, time, math, re, copy
 import logging,pprint,docopt
-
 import torch
 import numpy as np
-# import torchvision
-# from torchvision import datasets, models, transforms
-# import matplotlib.pyplot as plt
-from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(cur_path,'../lib'))
@@ -37,18 +31,21 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-09-26
+    Update: 2018-10-10
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/10/10      v1.4              fix cuda-oom  
+    2018/10/09      v1.3              support check nets mode 
+                                      support resnet-v2
     2018/09/26      v1.2              optimize logging info 
     2018/09/25      v1.1              support finetune & scratch training
                                       support xavier initialization
     2018/09/13      v1.0              basic functions 
 
     Usage:
-        pytorch_train.py              <input-cfg>
+        pytorch_train.py              <input-cfg> [-c|--check-nets]
         pytorch_train.py              -v | --version
         pytorch_train.py              -h | --help
 
@@ -58,6 +55,8 @@ def _init_():
     Options:
         -h --help                   show this help screen
         -v --version                show current version
+        -------------------------------------------------------------
+        -c --check-nets             check available network arch only
 
     '''
     # merge configuration
@@ -97,11 +96,17 @@ def main():
 
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(x) for x in cfg.GPU_IDX])
     num_gpus = len(cfg.GPU_IDX)
-    batch_size = num_gpus * cfg.BATCH_SIZE  # on all gpus
+    train_batch_size = num_gpus * cfg.BATCH_SIZE  # on all gpus
+    dev_batch_size = num_gpus * cfg.DEV_BATCH_SIZE
+
     # use_cuda = torch.cuda.is_available()
     pin_memory = True
 
     available_models, available_models_names = get_avail_models()
+    if args['--check-nets']:
+        logger.info("Currently available nets:\n{}".format("\n".join(available_models_names)))
+        return 0
+
     if cfg.NETWORK not in available_models_names:
         logger.error("Network architecture not supported, should be in:\n{}".format(available_models_names))
         logger.info("Aborting...")
@@ -122,9 +127,9 @@ def main():
 
     lr_scheduler = LRScheduler(cfg.BASE_LR, cfg.LR_FACTOR, cfg.STEP_EPOCHS, cfg.MAX_EPOCHS)
     
-    data_loader, data_size = inst_data_loader(cfg.TRAIN_LST, cfg.DEV_LST, batch_size)
+    data_loader, data_size = inst_data_loader(cfg.TRAIN_LST, cfg.DEV_LST, train_batch_size, dev_batch_size)
     logger.info("Start training:")
-    generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=cfg.MAX_EPOCHS) 
+    generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=cfg.MAX_EPOCHS, pre_eval=cfg.PRE_EVALUATION) 
 
 
 if __name__ == '__main__':

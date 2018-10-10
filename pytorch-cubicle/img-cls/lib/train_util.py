@@ -52,7 +52,7 @@ def inst_meter_dict(meter_list, meter_style='avg'):
             result[meter] = AvgMeter() 
     return result
 
-def generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=100, use_gpu=True):
+def generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=100, use_gpu=True, pre_eval=False):
     tic = time.time()
 
     best_model = model
@@ -60,6 +60,39 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
 
     temporary = inst_meter_dict(['batch_time','data_time','losses','top_1_acc','top_5_acc'])
     accumulator = inst_meter_dict(['losses','top_1_acc','top_5_acc'])
+
+    # pre-evaluation phase to check gpu-memory
+    if pre_eval:
+        logging.info('Validation [0/{}]:'.format(max_epoch))
+        model.eval()
+        
+        toc = time.time()
+        for batch_index, (inputs, labels) in enumerate(data_loader['dev']):
+            batch_size = inputs.size(0)
+            temporary['data_time'].update(time.time()-toc)
+            # wrap in Variable
+            if use_gpu:
+                try:
+                    inputs, labels = Variable(inputs.float().cuda()), Variable(labels.long().cuda(async=True))
+                except:
+                    logging.error(inputs,labels)
+            else:
+                inputs, labels = Variable(inputs), Variable(labels)
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            acc_1, acc_5 = accuracy(outputs.data, labels.data, topk=(1, 5))
+
+            accumulator['losses'].update(loss.item(), batch_size)
+            accumulator['top_1_acc'].update(acc_1.item(), batch_size)
+            accumulator['top_5_acc'].update(acc_5.item(), batch_size)
+
+        logging.info('[{}/{}] loss: {:.4f} | top-1: {:.4f} | top-5: {:.4f}'.format(
+                    0, max_epoch,
+                    accumulator['losses'].avg,
+                    accumulator['top_1_acc'].avg,
+                    accumulator['top_5_acc'].avg
+                    ))
+        logging.info('Pre-evaluation done, everything is ok')
 
     for epoch in range(max_epoch):
         is_best = False
@@ -79,7 +112,6 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
             toc = time.time()
             for batch_index, (inputs, labels) in enumerate(data_loader[phase]):
                 batch_size = inputs.size(0)
-                # print(inputs.size())
                 temporary['data_time'].update(time.time()-toc)
                 # wrap in Variable
                 if use_gpu:
@@ -130,7 +162,7 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
                         temporary['top_1_acc'].reset()
                         temporary['top_5_acc'].reset()
 
-            logging.info('epoch: {}/{} loss: {:.4f} | top-1: {:.4f} | top-5: {:.4f}'.format(
+            logging.info('[{}/{}] loss: {:.4f} | top-1: {:.4f} | top-5: {:.4f}'.format(
                         epoch+1, max_epoch,
                         accumulator['losses'].avg,
                         accumulator['top_1_acc'].avg,

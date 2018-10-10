@@ -78,6 +78,22 @@ class DummyDataset(pth_data.dataset.Dataset):
         return self.data_len
 
 
+class RandomPixelJitter(object):
+    '''
+    Customized
+    '''
+    def __init__(self, pixel_range):
+        self.pixel_range = pixel_range
+        assert len(pixel_range) == 2
+
+    def __call__(self, im):
+        pic = np.array(im)  # with pixel value of 0-255
+        noise = np.random.randint(self.pixel_range[0], self.pixel_range[1], pic.shape[-1])
+        pic = pic + noise
+        pic = pic.astype(np.uint8)  # eliminate negative value
+        return Image.fromarray(pic)
+
+
 def compose_transform_list(cfg_obj):
     result = list()
     if cfg_obj.RESIZE:
@@ -100,6 +116,8 @@ def compose_transform_list(cfg_obj):
                     saturation=cfg_obj.CJ_SATURATION,
                     hue=cfg_obj.CJ_HUE
                     ))
+    if cfg_obj.PIXEL_JITTER:
+        result.append(RandomPixelJitter(pixel_range=[-cfg_obj.PJ_MAX, cfg_obj.PJ_MAX]))
     if cfg_obj.RANDOM_AFFINE:
         result.append(transforms.RandomAffine(
                     degrees=cfg_obj.RA_DEGREES,
@@ -137,14 +155,14 @@ def compose_transform_list(cfg_obj):
     return result
 
 
-def inst_data_loader(data_train, data_dev, batch_size):
+def inst_data_loader(data_train, data_dev, train_batch_size, dev_batch_size):
     trans = {
     'train': transforms.Compose(compose_transform_list(cfg.TRAIN)),
     'dev': transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize([x/256 for x in cfg.TRAIN.MEAN_RGB], [x/256 for x in cfg.TRAIN.STD_RGB])
     ]),
     }
     
@@ -152,8 +170,8 @@ def inst_data_loader(data_train, data_dev, batch_size):
     dataset_dev = DummyDataset(data_dev, trans['dev'], img_path_prefix=cfg.TRAIN.DEV_IMG_PREFIX)  
 
     data_loader = {
-    'train': pth_data.DataLoader(dataset=dataset_train, batch_size=batch_size, shuffle=cfg.TRAIN.SHUFFLE, num_workers=cfg.TRAIN.PROCESS_THREAD),
-    'dev': pth_data.DataLoader(dataset=dataset_dev, batch_size=batch_size, shuffle=False, num_workers=cfg.TRAIN.PROCESS_THREAD)
+    'train': pth_data.DataLoader(dataset=dataset_train, batch_size=train_batch_size, shuffle=cfg.TRAIN.SHUFFLE, num_workers=cfg.TRAIN.PROCESS_THREAD),
+    'dev': pth_data.DataLoader(dataset=dataset_dev, batch_size=dev_batch_size, shuffle=False, num_workers=cfg.TRAIN.PROCESS_THREAD)
     }
 
     data_size = {'train': len(dataset_train), 'dev': len(dataset_dev)}

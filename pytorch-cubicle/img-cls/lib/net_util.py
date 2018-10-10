@@ -94,7 +94,10 @@ def init_model(model_lib):
     '''
     '''
     # create network
-    model = eval("model_lib.{}()".format(cfg.TRAIN.NETWORK))
+    if 'resnext' in cfg.TRAIN.NETWORK:
+        model = eval("model_lib.{}({},{})".format(cfg.TRAIN.NETWORK, cfg.TRAIN.SCR.X_WIDTH_PER_GROUP, cfg.TRAIN.SCR.X_NUM_GROUPS))
+    else:
+        model = eval("model_lib.{}()".format(cfg.TRAIN.NETWORK))
 
     # init weights
     if cfg.TRAIN.XAVIER_INIT:
@@ -119,4 +122,21 @@ def init_model(model_lib):
         model = torch.nn.DataParallel(model).cuda()
     return model
     
+def init_forward_net(model_lib):
+    '''
+    '''
+    # create network
+    if 'resnext' in cfg.TRAIN.NETWORK:
+        model = eval("model_lib.{}({},{})".format(cfg.TRAIN.NETWORK, cfg.TRAIN.SCR.X_WIDTH_PER_GROUP, cfg.TRAIN.SCR.X_NUM_GROUPS))
+    else:
+        model = eval("model_lib.{}()".format(cfg.TRAIN.NETWORK))
+
+    # load weight
+    model_file = cfg.TEST.MODEL_WEIGHTS
+    model_weight = load_checkpoint(model_file, is_tar=model_file.endswith('.tar'))
+    model.load_state_dict(model_weight)
+
+    # swith mode 
+    model.cuda().eval() 
+    return model
 
