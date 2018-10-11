@@ -58,9 +58,26 @@ def accuracy(output, target, topk=(1,)):
     maxk = max(topk)
     batch_size = target.size(0)
 
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
+    _, pred = output.topk(maxk, 1, True, True)  # pred: indices of top-k scores
+    pred = pred.t() # transpose dim 0 and 1
     correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
+def mixup_accuracy(output, target_a, target_b, lam, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)  # pred: indices of top-k scores
+    pred = pred.t() # transpose dim 0 and 1
+    correct = (lam * pred.eq(targets_a.data).cpu().sum().float()
+                + (1 - lam) * predicted.eq(targets_b.data).cpu().sum().float())
 
     res = []
     for k in topk:

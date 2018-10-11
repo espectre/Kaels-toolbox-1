@@ -244,6 +244,10 @@ __C.TRAIN.PG.OUTPUT_GROUP = list()
 __C.TRAIN.PG.CLASSIFIER_WEIGHTS = "" 
 __C.TRAIN.PG.TARGET_SHAPE = (8, 8)  # after down-sapmling 
 
+# --- mix-up training setting ----
+__C.TRAIN.USE_MIXUP = False
+__C.TRAIN.MU = AttrDict()
+__C.TRAIN.MU.ALPHA = 1.0
 
 # ---------------------------------------------------------------------------- #
 # Tesing options

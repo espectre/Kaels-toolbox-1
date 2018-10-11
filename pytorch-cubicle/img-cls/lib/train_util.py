@@ -52,6 +52,9 @@ def inst_meter_dict(meter_list, meter_style='avg'):
             result[meter] = AvgMeter() 
     return result
 
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
 def generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=100, use_gpu=True, pre_eval=False):
     tic = time.time()
 
@@ -94,6 +97,7 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
                     ))
         logging.info('Pre-evaluation done, everything is ok')
 
+    # train
     for epoch in range(max_epoch):
         is_best = False
         # Each epoch has a training and validation phase
@@ -117,6 +121,9 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
                 if use_gpu:
                     try:
                         inputs, labels = Variable(inputs.float().cuda()), Variable(labels.long().cuda(async=True))
+                        if cfg.TRAIN.USE_MIXUP:
+                            inputs, targets_a, targets_b, lam = mixup_data(inputs, labels, cfg.TRAIN.MU.ALPHA)
+                            inputs, targets_a, targets_b = map(Variable, (inputs, targets_a, targets_b))
                     except:
                         logging.error(inputs,labels)
                 else:
@@ -125,7 +132,10 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
                 # Set gradient to zero to delete history of computations in previous epoch. Track operations so that differentiation can be done automatically.
                 optimizer.zero_grad()
                 outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                if cfg.TRAIN.USE_MIXUP:
+                    loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+                else:
+                    loss = criterion(outputs, labels)
                 acc_1, acc_5 = accuracy(outputs.data, labels.data, topk=(1, 5))
 
                 # losses.update(loss.data[0], inputs.size(0))
