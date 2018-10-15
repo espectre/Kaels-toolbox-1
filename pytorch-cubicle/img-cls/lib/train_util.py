@@ -3,8 +3,8 @@ import copy
 import logging
 import numpy as np
 from torch.autograd import Variable
-from misc import AvgMeter, accuracy
-from io_util import save_checkpoint
+from misc import AvgMeter, accuracy, mixup_accuracy
+from io_util import save_checkpoint, mixup_data
 from config import cfg
 
 class LRScheduler:
@@ -100,6 +100,14 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
     # train
     for epoch in range(max_epoch):
         is_best = False
+        use_mixup = cfg.TRAIN.MIXUP 
+        if use_mixup:
+            logging.info('Mix-up used during training')
+            if epoch not in xrange(cfg.TRAIN.MU.ACTIVE_EPOCH_RANGE[0], cfg.TRAIN.MU.ACTIVE_EPOCH_RANGE[1]):
+                use_mixup = False
+                logging.info('Mix-up switch OFF')
+            else:
+                logging.info('Mix-up switch ON')
         # Each epoch has a training and validation phase
         for phase in ['train', 'dev']:
             if phase == 'train':
@@ -121,22 +129,24 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
                 if use_gpu:
                     try:
                         inputs, labels = Variable(inputs.float().cuda()), Variable(labels.long().cuda(async=True))
-                        if cfg.TRAIN.USE_MIXUP:
+                        if use_mixup:
                             inputs, targets_a, targets_b, lam = mixup_data(inputs, labels, cfg.TRAIN.MU.ALPHA)
                             inputs, targets_a, targets_b = map(Variable, (inputs, targets_a, targets_b))
                     except:
-                        logging.error(inputs,labels)
+                        logging.error('\n==> inputs:\n{}\n==> labels:\n{}'.format(inputs,labels))
+                        return 0
                 else:
                     inputs, labels = Variable(inputs), Variable(labels)
 
                 # Set gradient to zero to delete history of computations in previous epoch. Track operations so that differentiation can be done automatically.
                 optimizer.zero_grad()
                 outputs = model(inputs)
-                if cfg.TRAIN.USE_MIXUP:
+                if use_mixup and phase == 'train':
                     loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+                    acc_1, acc_5 = mixup_accuracy(outputs.data, targets_a, targets_b, lam, topk=(1, 5))
                 else:
                     loss = criterion(outputs, labels)
-                acc_1, acc_5 = accuracy(outputs.data, labels.data, topk=(1, 5))
+                    acc_1, acc_5 = accuracy(outputs.data, labels.data, topk=(1, 5))
 
                 # losses.update(loss.data[0], inputs.size(0))
                 temporary['losses'].update(loss.item(), batch_size)

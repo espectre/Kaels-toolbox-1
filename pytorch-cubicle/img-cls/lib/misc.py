@@ -70,14 +70,25 @@ def accuracy(output, target, topk=(1,)):
 
 
 def mixup_accuracy(output, target_a, target_b, lam, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
+    '''
+    accuracy of train data in mix-up means nothing
+    '''
+    # print('output.shape:', output.shape)
+    # print('target_a.shape:', target_a.shape)
+    # print('target_b.shape:', target_b.shape)
+    # print(output)
+    # print(target_a)
+    # print(target_b)
     maxk = max(topk)
-    batch_size = target.size(0)
+    batch_size = target_a.size(0)
 
     _, pred = output.topk(maxk, 1, True, True)  # pred: indices of top-k scores
     pred = pred.t() # transpose dim 0 and 1
-    correct = (lam * pred.eq(targets_a.data).cpu().sum().float()
-                + (1 - lam) * predicted.eq(targets_b.data).cpu().sum().float())
+    # print('pred.shape:', pred.shape)
+    # print('pred:', pred)
+
+    correct = (lam * pred.eq(target_a.view(1, -1).expand_as(pred))
+            + (1 - lam) * pred.eq(target_b.view(1, -1).expand_as(pred)))
 
     res = []
     for k in topk:

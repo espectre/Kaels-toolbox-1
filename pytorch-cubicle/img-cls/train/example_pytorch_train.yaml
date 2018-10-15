@@ -1,17 +1,16 @@
 TRAIN:
   LOG_PATH: train/tmp.log
-  OUTPUT_MODEL_PREFIX: train/tmp/tmp
-  TRAIN_LST: /workspace/dataset/warden/imagenet/imagenet-1k/Lists/devkit-ILSVRC2015/annotations/ILSVRC2015_cls_train_gt_shifted.lst
-  DEV_LST: /workspace/dataset/warden/imagenet/imagenet-1k/Lists/devkit-ILSVRC2015/annotations/ILSVRC2015_cls_val_gt_shifted.lst
-  TRAIN_IMG_PREFIX: /workspace/dataset/warden/imagenet/imagenet-1k/Image/ILSVRC2012_img_train/
-  DEV_IMG_PREFIX: /workspace/dataset/warden/imagenet/imagenet-1k/Image/ILSVRC2012_img_val/
+  OUTPUT_MODEL_PREFIX: train/tmp/tmp-model
+  TRAIN_LST: /path/to/ILSVRC2015_cls_train_gt_shifted.lst
+  DEV_LST: /path/to/ILSVRC2015_cls_val_gt_shifted.lst
+  TRAIN_IMG_PREFIX: /path/to/ILSVRC2012_img_train/
+  DEV_IMG_PREFIX: /path/to/ILSVRC2012_img_val/
 
   PROCESS_THREAD: 8
   USE_GPU: True
   GPU_IDX: [0,1,2,3,4,5,6,7]
   BATCH_SIZE: 32
   DEV_BATCH_SIZE: 16
-  PRE_EVALUATION: True
   LOG_INTERVAL: 10 
   LOG_NET_PARAMS: True
   PRE_EVALUATION: False
@@ -58,6 +57,13 @@ TRAIN:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
 
-  FINETUNE: True
+  FINETUNE: False 
   FT:
-    PRETRAINED_MODEL_WEIGHTS: /workspace/northrend/imagenet/model/pretrain_models/resnet-18.pth
+    PRETRAINED_MODEL_WEIGHTS: /path/to/resnet-18.pth
+    RENAME_STATE_DICT: False 
+    
+  SCRATCH: True
+ 
+  MIXUP: True
+  MU:
+    ALPHA: 0.5

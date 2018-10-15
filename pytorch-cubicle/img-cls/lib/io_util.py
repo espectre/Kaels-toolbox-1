@@ -6,6 +6,7 @@ from torchvision import transforms
 from torch.utils import data as pth_data
 from torch import save as t_save
 from torch import load as t_load
+from torch import randperm as randperm
 from PIL import Image
 from config import cfg
 from collections import OrderedDict
@@ -188,9 +189,9 @@ def mixup_data(x, y, alpha=1.0, use_cuda=True):
 
     batch_size = x.size()[0]
     if use_cuda:
-        index = torch.randperm(batch_size).cuda()
+        index = randperm(batch_size).cuda()
     else:
-        index = torch.randperm(batch_size)
+        index = randperm(batch_size)
 
     mixed_x = lam * x + (1 - lam) * x[index, :]
     y_a, y_b = y, y[index]
