@@ -129,7 +129,7 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
                 if use_gpu:
                     try:
                         inputs, labels = Variable(inputs.float().cuda()), Variable(labels.long().cuda(async=True))
-                        if use_mixup:
+                        if phase == 'train' and use_mixup:
                             inputs, targets_a, targets_b, lam = mixup_data(inputs, labels, cfg.TRAIN.MU.ALPHA)
                             inputs, targets_a, targets_b = map(Variable, (inputs, targets_a, targets_b))
                     except:

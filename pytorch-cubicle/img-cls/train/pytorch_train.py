@@ -31,11 +31,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-10-15
+    Update: 2018-10-18
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/10/18      v1.6              fix mix-up training bug
     2018/10/15      v1.5              support mix-up training trick  
     2018/10/10      v1.4              fix cuda-oom  
     2018/10/09      v1.3              support check nets mode 
