@@ -217,7 +217,7 @@ def save_checkpoint(state, model_prefix, is_best=False):
         saved dict: {"epoch":, "state_dict":, "acc":, "optimizer":} 
     '''
     file_path = '{}-{:0>4}.pth.tar'.format(model_prefix, state["epoch"])
-    best_path = '{}-accpeak.pth.tar'.format(model_prefix)
+    best_path = '{}-accbest-{:0>4}.pth.tar'.format(model_prefix, state["epoch"])
     t_save(state, file_path)
     if is_best:
         shutil.copyfile(file_path, best_path) 
