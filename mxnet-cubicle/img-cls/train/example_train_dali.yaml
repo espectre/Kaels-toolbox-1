@@ -1,7 +1,7 @@
 TRAIN:
     # path
-    LOG_PATH: /workspace/northrend/imagenet/dali_demo/demo_no_dali_cn.log 
-    OUTPUT_MODEL_PREFIX: /workspace/northrend/imagenet/dali_demo/demo-no-dali 
+    LOG_PATH: /workspace/northrend/imagenet/dali_demo/demo_dali_cn.log 
+    OUTPUT_MODEL_PREFIX: /workspace/northrend/imagenet/dali_demo/demo-dali 
     TRAIN_REC: /workspace/northrend/imagenet/recordio/dev-256-q95.rec 
     DEV_REC: /workspace/northrend/imagenet/recordio/dev-256-q95.rec
 
@@ -20,7 +20,7 @@ TRAIN:
     TEST_IO_MODE: False
 
     USE_REC: True
-    USE_DALI: False 
+    USE_DALI: True
     
     # learning hyper params
     BASE_LR: 0.1
@@ -30,6 +30,6 @@ TRAIN:
     # finetune
     FINETUNE: True 
     FT:
-        PRETRAINED_MODEL_PREFIX: /workspace/northrend/imagenet/dali_demo/caffenet
-        FINETUNE_LAYER: 'fc8'
+        PRETRAINED_MODEL_PREFIX: /workspace/northrend/imagenet/dali_demo/caffenet 
         PRETRAINED_MODEL_EPOCH: 0   
+        FINETUNE_LAYER: 'fc8'

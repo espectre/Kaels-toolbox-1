@@ -162,6 +162,7 @@ __C.TRAIN.RES.MODEL_EPOCH = 0
 
 # ---- data hyper params ----
 __C.TRAIN.USE_REC = True 
+__C.TRAIN.USE_DALI = False 
 __C.TRAIN.TRAIN_REC = "" 
 __C.TRAIN.DEV_REC = "" 
 __C.TRAIN.TRAIN_LST = "" 

@@ -26,7 +26,7 @@ def check_dir(path):
         os.mkdir(dirname)
 
 
-def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), resize=(-1,-1), resize_scale=(1,1), use_svm_label=False):
+def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), resize=(-1,-1), resize_scale=(1,1), use_svm_label=False, use_dali=False):
     '''
     Instantiate specified training and developing data iterators
     :params:
@@ -37,6 +37,7 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     resize          resize shorter edge of (train,dev) data, -1 means no resize
     resize_scale    resize train-data into (width*s, height*s), with s randomly chosen from this range 
     use_svm_label   set as True if classifier needs svm label name
+    use_dali        set as True if nvidia dali is supposed to be used
     :return:
     train, dev      tuple of 2 iterators
     '''
@@ -52,7 +53,7 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     label_name = 'softmax_label' if not use_svm_label else 'svm_label'
 
     # build iterators
-    if cfg.TRAIN.USE_REC:
+    if not cfg.TRAIN.USE_DALI and cfg.TRAIN.USE_REC:
         logging.info("Creating recordio iterators")
         train = mx.io.ImageRecordIter(
                 dtype               = cfg.TRAIN.DATA_TYPE,
@@ -109,7 +110,8 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
                 std_b               = std_b,
                 inter_method        = cfg.TRAIN.INTERPOLATION_METHOD
                 )
-    else:
+
+    elif not cfg.TRAIN.USE_DALI and not cfg.TRAIN.USE_REC:
         logging.info("Creating image iterators")
         # set decoding thread number
         os.environ['MXNET_CPU_WORKER_NTHREADS'] = str(cfg.TRAIN.PROCESS_THREAD) 
@@ -174,6 +176,22 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
                 last_batch_handle   = cfg.TRAIN.LAST_BATCH_HANDLE,
                 aug_list            = aug_list_dev
                 )
+
+    elif cfg.TRAIN.USE_DALI and cfg.TRAIN.USE_REC:
+        from dali_util import HybridTrainPipe, HybridValPipe
+        from nvidia.dali.plugin.mxnet import DALIClassificationIterator 
+        num_gpus = len(cfg.TRAIN.GPU_IDX)
+        batch_size /= num_gpus
+        train_pipes = [HybridTrainPipe(batch_size=batch_size, num_threads=cfg.TRAIN.PROCESS_THREAD, device_id = i, num_gpus = num_gpus) for i in range(num_gpus)]
+        dev_pipes = [HybridValPipe(batch_size=batch_size, num_threads=cfg.TRAIN.PROCESS_THREAD, device_id = i, num_gpus = num_gpus) for i in range(num_gpus)]
+        train_pipes[0].build()
+        dev_pipes[0].build()
+        train = DALIClassificationIterator(train_pipes, train_pipes[0].epoch_size("Reader"))
+        dev = DALIClassificationIterator(dev_pipes, dev_pipes[0].epoch_size("Reader"))
+
+    else:
+        logging.error('Invalid data loader type')
+        pass
     logging.info("Data iters created successfully")
     return train, dev 
 
