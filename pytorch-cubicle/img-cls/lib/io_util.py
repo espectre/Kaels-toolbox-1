@@ -94,6 +94,11 @@ class RandomPixelJitter(object):
         pic = pic.astype(np.uint8)  # eliminate negative value
         return Image.fromarray(pic)
 
+    def __repr__(self):
+        # interpolate_str = _pil_interpolation_to_str[self.interpolation]
+        format_string = self.__class__.__name__ + '(pixel_range={0})'.format(self.pixel_range)
+        return format_string
+
 
 def compose_transform_list(cfg_obj):
     result = list()

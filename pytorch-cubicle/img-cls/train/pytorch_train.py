@@ -31,14 +31,16 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-10-18
+    Update: 2018-10-24
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/10/24      v1.8              support mobilenet-v2 and se-mobilenet-v2
+    2018/10/23      v1.7              fix cuda oom caused by val-phase grad
     2018/10/18      v1.6              fix mix-up training bug
     2018/10/15      v1.5              support mix-up training trick  
-    2018/10/10      v1.4              fix cuda-oom  
+    2018/10/10      v1.4              support pre-evaluation  
     2018/10/09      v1.3              support check nets mode 
                                       support resnet-v2
     2018/09/26      v1.2              optimize logging info 
@@ -99,7 +101,7 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(x) for x in cfg.GPU_IDX])
     num_gpus = len(cfg.GPU_IDX)
     train_batch_size = num_gpus * cfg.BATCH_SIZE  # on all gpus
-    dev_batch_size = num_gpus * cfg.DEV_BATCH_SIZE
+    dev_batch_size = num_gpus * cfg.DEV_BATCH_SIZE if cfg.DEV_BATCH_SIZE else train_batch_size
 
     # use_cuda = torch.cuda.is_available()
     pin_memory = True

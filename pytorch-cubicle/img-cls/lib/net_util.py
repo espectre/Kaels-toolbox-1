@@ -46,7 +46,8 @@ def _weight_xv_init(m):
         torch.nn.init.constant_(m.bias.data, 0)
     elif isinstance(m, torch.nn.Linear):
         torch.nn.init.xavier_normal_(m.weight.data)
-        torch.nn.init.normal_(m.bias.data)
+        if m.bias is not None:
+            torch.nn.init.normal_(m.bias.data)
     elif isinstance(m, torch.nn.LSTM):
         for param in m.parameters():
             if len(param.shape) >= 2:
