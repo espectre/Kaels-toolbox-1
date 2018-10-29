@@ -8,6 +8,8 @@ from torch import save as t_save
 from torch import load as t_load
 from torch import randperm as randperm
 from PIL import Image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from config import cfg
 from collections import OrderedDict
 

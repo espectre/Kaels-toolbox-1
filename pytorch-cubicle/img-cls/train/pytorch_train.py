@@ -31,11 +31,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-10-24
+    Update: 2018-10-29
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/10/29      v1.9              fix PIL loading bug 
     2018/10/24      v1.8              support mobilenet-v2 and se-mobilenet-v2
     2018/10/23      v1.7              fix cuda oom caused by val-phase grad
     2018/10/18      v1.6              fix mix-up training bug
@@ -97,6 +98,7 @@ def tensorboard():
 def main():
     logger.info('Configuration:')
     logger.info(pprint.pformat(_))
+    logger.info('PyTorch version: {}'.format(torch.__version__))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(x) for x in cfg.GPU_IDX])
     num_gpus = len(cfg.GPU_IDX)
