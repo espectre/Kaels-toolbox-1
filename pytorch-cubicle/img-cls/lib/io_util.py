@@ -151,8 +151,8 @@ def compose_transform_list(cfg_obj):
 
     result.append(transforms.ToTensor())
     result.append(transforms.Normalize(
-                mean=[x/256 for x in cfg_obj.MEAN_RGB],
-                std=[x/256 for x in cfg_obj.STD_RGB]
+                mean=[x/255 for x in cfg_obj.MEAN_RGB],
+                std=[x/255 for x in cfg_obj.STD_RGB]
                 ))
     logging.info('Data transformations:')
     for trans in result:
