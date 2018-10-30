@@ -235,14 +235,23 @@ def single_image_test(model, image_path, categories, input_shape, img_preproc_kw
     # input data batch 
     if center_crop:
         img_ccr = np_img_center_crop(img_tmp, input_shape[1]) 
-        img_batch = mx.nd.array(img_ccr[np.newaxis, :])
+        if np.__version__.startswith('1.15'):
+            img_batch = mx.nd.array(img_ccr)
+        else:
+            img_batch = mx.nd.array(img_ccr[np.newaxis, :])
     elif multi_crop:
         img_batch = mx.nd.array(np.zeros((multi_crop, input_shape[0], input_shape[1], input_shape[2])))
         img_crs = np_img_multi_crop(img_tmp, input_shape[1], crop_number=multi_crop)
         for idx_crop,crop in enumerate(img_crs):
-            img_batch[idx_crop] = mx.nd.array(crop[np.newaxis, :])
+            if np.__version__.startswith('1.15'):
+                img_batch[idx_crop] = mx.nd.array(crop)
+            else:
+                img_batch[idx_crop] = mx.nd.array(crop[np.newaxis, :])
     else:
-        img_batch = mx.nd.array(img_tmp[np.newaxis, :])
+        if np.__version__.startswith('1.15'):
+            img_batch = mx.nd.array(img_tmp)
+        else:
+            img_batch = mx.nd.array(img_tmp[np.newaxis, :])
     logging.info('Shape of data fed to model: {}'.format(img_batch.shape))
 
     # forward

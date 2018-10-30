@@ -53,7 +53,7 @@ def _init_():
         -b --basename                   set to save as original basename
         -s --source-station             set to download via source station proxy
         ------------------------------------------------------------------------------------------
-        --date=str                      date mark in filename [default: 1123]
+        --date=str                      date mark in filename
         --start-index=int               start index in filename [default: 0]
         --download-path=str             path to save result file [default: ./]
         --mapfile-path=str              path to save mapping files
@@ -92,9 +92,12 @@ class prod_worker(threading.Thread):
             if self.use_basename:
                 temp['filename'] = os.path.join(
                     args['--download-path'], os.path.basename(temp['url']))
-            else:
+            elif args['--date']:
                 temp['filename'] = os.path.join(
                     args['--download-path'], FILE_NAME.format(args['--date'], i))
+            else:
+                temp['filename'] = os.path.join(
+                    args['--download-path'], FILE_NAME.format(i))
             self.f2u[os.path.basename(temp['filename'])] = temp['url']
             self.u2f[temp['url']] = os.path.basename(temp['filename'])
             GLOBAL_LOCK.acquire()
@@ -159,8 +162,13 @@ def filename_init():
     global FILE_NAME
     args['--prefix'] = "" if not args['--prefix'] else args['--prefix']
     args['--suffix'] = "" if not args['--suffix'] else args['--suffix']
-    FILE_NAME = args['--prefix'] + '_{}_{:0>8}' + \
-        args['--suffix'] + '.' + args['--ext']
+    if args['--date']:
+        FILE_NAME = args['--prefix'] + '_{}_{:0>8}' + \
+            args['--suffix'] + '.' + args['--ext']
+    else:
+        FILE_NAME = args['--prefix'] + '_{:0>8}' + \
+            args['--suffix'] + '.' + args['--ext']
+        
     if not args['--basename']:
         print('=> files will be saved as:', FILE_NAME.format(args['--date'], 0))
 

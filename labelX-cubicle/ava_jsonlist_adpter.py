@@ -91,8 +91,8 @@ def main():
         for item in json_lst:
             try:
                 temp_dict = json.loads(item.strip())
-                # img = os.path.basename(temp_dict['url'])
-                img = temp_dict['url']
+                img = os.path.basename(temp_dict['url'])
+                # img = temp_dict['url']
                 label = category.index(temp_dict['label'][0]['data'][0]['class'])
             except:
                 print('syntax error:',item.strip())
