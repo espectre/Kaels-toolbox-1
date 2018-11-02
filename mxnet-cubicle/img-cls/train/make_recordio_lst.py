@@ -24,13 +24,13 @@ def mklst(input, output, basename=False, multi_label=False):
     for buff in file_in:
         if basename: 
             if not multi_label:
-                lst.append(os.path.basename(buff.split()[0]), int(buff.split()[1]))
+                lst.append(os.path.basename(buff.split()[0]), int(buff.split()[-1]))
             else:
                 lst.append(os.path.basename(buff.split()[0]), int(buff.split()[1]), int(buff.split()[2]))
             i += 1
         else:
             if not multi_label:
-                lst.append((buff.split()[0], int(buff.split()[1])))
+                lst.append((buff.split()[0], int(buff.split()[-1])))
             else:
                 lst.append((buff.split()[0], int(buff.split()[1]), int(buff.split()[2])))
             i += 1
