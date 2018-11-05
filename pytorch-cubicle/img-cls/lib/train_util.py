@@ -12,7 +12,7 @@ class LRScheduler:
     '''
     '''
 
-    def __init__(self, base_lr, lr_factor, step_epochs, max_epoch):
+    def __init__(self, base_lr, lr_factor, step_epochs, max_epoch, fixed_step=False):
         '''
         '''
         def _precomp_lr_map(self):
@@ -31,8 +31,11 @@ class LRScheduler:
         assert isinstance(step_epochs, list), 'step_epochs should be a list of ints'
         self.base_lr = base_lr
         self.lr_factor = lr_factor
-        self.step_epochs = step_epochs
         self.max_epoch = max_epoch
+        if fixed_step:  # fixed lr decay interval
+            self.step_epochs = range(1, max_epoch, step_epochs[0])
+        else:   # customized lr decay epochs
+            self.step_epochs = step_epochs
         self.lr_map = _precomp_lr_map(self)
 
     def get_cur_lr(self, epoch):
@@ -258,4 +261,6 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
 
 if __name__ == '__main__':
     a = LRScheduler(0.1, 0.1, [10,15,20], 30)
+    b = LRScheduler(0.1, 0.1, [1,2,3], 30, fixed_step=True)
     print(a.get_cur_lr(18))
+    print(b.lr_map)

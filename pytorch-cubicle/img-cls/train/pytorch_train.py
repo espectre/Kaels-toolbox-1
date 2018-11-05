@@ -31,11 +31,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-10-29
+    Update: 2018-11-05
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/11/05      v2.0              support lr fixed decay step
     2018/10/29      v1.9              fix PIL loading bug 
     2018/10/24      v1.8              support mobilenet-v2 and se-mobilenet-v2
     2018/10/23      v1.7              fix cuda oom caused by val-phase grad
@@ -131,7 +132,7 @@ def main():
     if cfg.USE_GPU:
         torch.backends.cudnn.benchmark = True
 
-    lr_scheduler = LRScheduler(cfg.BASE_LR, cfg.LR_FACTOR, cfg.STEP_EPOCHS, cfg.MAX_EPOCHS)
+    lr_scheduler = LRScheduler(cfg.BASE_LR, cfg.LR_FACTOR, cfg.STEP_EPOCHS, cfg.MAX_EPOCHS, fixed_step=cfg.FIXED_STEP)
     
     data_loader, data_size = inst_data_loader(cfg.TRAIN_LST, cfg.DEV_LST, train_batch_size, dev_batch_size)
     logger.info("Start training:")
