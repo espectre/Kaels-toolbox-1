@@ -75,8 +75,10 @@ def generic_train(data_loader, data_size, model, criterion, optimizer, lr_schedu
         
         toc = time.time()
         with no_grad(): # close all grads, operations inside don't track history
+            batch_size = 0
             for batch_index, (inputs, labels) in enumerate(data_loader['dev']):
-                batch_size = inputs.size(0)
+                if batch_size == 0:
+                    batch_size = inputs.size(0)
                 temporary['data_time'].update(time.time()-toc)
                 # wrap in Variable
                 if use_gpu:
