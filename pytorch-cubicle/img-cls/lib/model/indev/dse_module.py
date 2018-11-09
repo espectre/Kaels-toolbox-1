@@ -15,6 +15,7 @@ class DSELayer(nn.Module):
     def forward(self, x, xr):
         b, c, _, _ = x.size()
         # y = self.avg_pool(x).view(b, c)
+        xpxr = x + xr
         y = self.avg_pool(x).view(b, c) + self.avg_pool(xr).view(b, c)
         y = self.fc(y).view(b, c, 1, 1)
-        return x * y.expand_as(x)
+        return xpxr * y.expand_as(xpxr)

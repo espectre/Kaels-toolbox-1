@@ -74,9 +74,11 @@ class DSEBottleneck(nn.Module):
         else:
             residual = x
         # dse path
+        # dse a 
         out = self.se(out, residual)
+        # dse b
+        # TODO 
 
-        out += residual
         out = self.relu(out)
 
         return out
