@@ -22,7 +22,7 @@ import pprint
 # REMOTE_API = "http://atnet-apiserver.ava.k8s-xs.qiniu.io/"
 # REMOTE_API = "http://atnet-apiserver.ava-staging.k8s-xs.qiniu.io/"
 # REMOTE_API = "http://atnet-apiserver.ava-staging.ke-xs.cloudappl.com/"  # outer
-REMOTE_API = "http://atnet-apiserver.ava-prd.ke-xs.cloudappl.com/"  # outer
+REMOTE_API = "http://atnet-apiserver.ava-prd-jq.ke-xs.cloudappl.com/"  # outer
 # REMOTE_API = "http://atnet-apiserver-internal.ava-staging.k8s-xs.qiniu.io/" # intra
 
 
