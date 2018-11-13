@@ -39,11 +39,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-10-19
+    Update: 2018-11-13
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/11/13  v5.0                add new dataloader preprocess supported by MXNet 1.3 
     2018/10/19  v4.3                support NV-DALI 
     2018/09/13  v4.2                fix svm bug
     2018/09/12  v4.1                support directly image loading

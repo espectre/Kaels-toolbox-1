@@ -26,7 +26,7 @@ def check_dir(path):
         os.mkdir(dirname)
 
 
-def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), resize=(-1,-1), resize_scale=(1,1), use_svm_label=False, use_dali=False):
+def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), resize=(-1,-1), resize_scale=(1,1), resize_area=(1,1), use_svm_label=False, use_dali=False):
     '''
     Instantiate specified training and developing data iterators
     :params:
@@ -36,6 +36,7 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     data_shape      input shape
     resize          resize shorter edge of (train,dev) data, -1 means no resize
     resize_scale    resize train-data into (width*s, height*s), with s randomly chosen from this range 
+    resize_area     Change the area (namely width * height) to a random value in [min_random_area, max_random_area]. Ignored if random_resized_crop is False 
     use_svm_label   set as True if classifier needs svm label name
     use_dali        set as True if nvidia dali is supposed to be used
     :return:
@@ -47,6 +48,8 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     assert len(mean)==3 and len(std)==3, logging.error("Mean or Std should be a list of 3 items")
     mean_r, mean_g, mean_b, std_r, std_g, std_b = mean[:] + std[:] 
     max_random_scale, min_random_scale = resize_scale 
+    max_random_area, min_random_area = resize_area 
+    min_aspect_ratio = cfg.TRAIN.MIN_ASPECT_RATIO if cfg.TRAIN.MIN_ASPECT_RATIO else None
     logging.info('Input normalization : Mean-RGB {}, Std-RGB {}'.format([mean_r, mean_g, mean_b],[std_r, std_g, std_b]))
     logging.info('Input scale augmentation : Max-random-sclae {}, Min-random-scale {}'.format(max_random_scale, min_random_scale))
     resize_train, resize_dev = resize
@@ -72,6 +75,12 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
                 rand_mirror         = cfg.TRAIN.RAND_MIRROR,
                 max_rotate_angle    = cfg.TRAIN.MAX_ROTATE_ANGLE,
                 max_aspect_ratio    = cfg.TRAIN.MAX_ASPECT_RATIO,
+                min_aspect_ratio    = min_aspect_ratio, 
+                random_resized_crop = cfg.TRAIN.RANDOM_RESIZED_CROP,
+                max_random_area     = max_random_area,
+                min_random_area     = min_random_area,
+                max_img_size        = cfg.TRAIN.MAX_IMG_SIZE,
+                min_img_size        = cfg.TRAIN.MIN_IMG_SIZE,
                 max_shear_ratio     = cfg.TRAIN.MAX_SHEAR_RATIO,
                 brightness          = cfg.TRAIN.BRIGHTNESS_JITTER,
                 contrast            = cfg.TRAIN.CONTRAST_JITTER,
@@ -100,7 +109,7 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
                 data_shape          = data_shape,
                 resize              = resize_dev,
                 shuffle             = False,
-                rand_crop           = False,
+                rand_crop           = False,    # center crop
                 rand_mirror         = False,
                 mean_r              = mean_r,
                 mean_g              = mean_g,
