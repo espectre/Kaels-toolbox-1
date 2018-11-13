@@ -44,45 +44,46 @@ def _init_():
     Contributor:
 
     Changelog:
-    2018/11/13  v5.0                add new dataloader preprocess supported by MXNet 1.3 
-    2018/10/19  v4.3                support NV-DALI 
-    2018/09/13  v4.2                fix svm bug
-    2018/09/12  v4.1                support directly image loading
-    2018/06/07  v4.0                code-refactoring 
-    2018/03/12  v3.2                support freeze feature layer weights 
-    2018/02/28  v3.1                support svm classifier 
-    2018/02/11  v3.0                support customized finetune layer name
-    2018/02/10  v2.9                support resize dev data separately
-    2018/02/03  v2.8                support random resize scale
-    2018/01/29  v2.7                fix resume training job bugs
-    2017/12/27  v2.6                support se-inception-v4
-    2017/12/04  v2.5                support change shorter edge size
-    2017/11/21  v2.4                support input nomalization
-    2017/09/22  v2.3                support resume training job 
-    2017/09/04  v2.2                support modify cardinality for resnext
-    2017/08/15  v2.1                support modify dropout argument
-    2017/08/09  v2.0                apply logging module
-    2017/08/08  v1.5                support scratch-training and more networks
-    2017/07/24  v1.4                support customized input shape
-    2017/07/13  v1.3                fix lr descend bug
-    2017/05/19  v1.2                support multi-metrics during training
-                                    support threshold and save-json options
-                                    modify script name from mxnet_train_finetune to mxnet_train
-    2017/05/10  v1.1                separate _init_ as a function
-    2017/05/08  v1.0                finetune task tested
-                                    resume training mode unsupported
+    2018/11/13  v5.1           support xception 
+    2018/11/13  v5.0           add new dataloader preprocess supported by MXNet 1.3 
+    2018/10/19  v4.3           support NV-DALI 
+    2018/09/13  v4.2           fix svm bug
+    2018/09/12  v4.1           support directly image loading
+    2018/06/07  v4.0           code-refactoring 
+    2018/03/12  v3.2           support freeze feature layer weights 
+    2018/02/28  v3.1           support svm classifier 
+    2018/02/11  v3.0           support customized finetune layer name
+    2018/02/10  v2.9           support resize dev data separately
+    2018/02/03  v2.8           support random resize scale
+    2018/01/29  v2.7           fix resume training job bugs
+    2017/12/27  v2.6           support se-inception-v4
+    2017/12/04  v2.5           support change shorter edge size
+    2017/11/21  v2.4           support input nomalization
+    2017/09/22  v2.3           support resume training job 
+    2017/09/04  v2.2           support modify cardinality for resnext
+    2017/08/15  v2.1           support modify dropout argument
+    2017/08/09  v2.0           apply logging module
+    2017/08/08  v1.5           support scratch-training and more networks
+    2017/07/24  v1.4           support customized input shape
+    2017/07/13  v1.3           fix lr descend bug
+    2017/05/19  v1.2           support multi-metrics during training
+                               support threshold and save-json options
+                               modify script name from mxnet_train_finetune to mxnet_train
+    2017/05/10  v1.1           separate _init_ as a function
+    2017/05/08  v1.0           finetune task tested
+                               resume training mode unsupported
 
     Usage:
-        mxnet_train.py              <input-cfg>
-        mxnet_train.py              -v | --version
-        mxnet_train.py              -h | --help
+        mxnet_train.py         <input-cfg>
+        mxnet_train.py         -v | --version
+        mxnet_train.py         -h | --help
 
     Arguments:
-        <input-cfg>                 path to customized config file
+        <input-cfg>            path to customized config file
 
     Options:
-        -h --help                   show this help screen
-        -v --version                show current version
+        -h --help              show this help screen
+        -v --version           show current version
     
     '''
     # merge configuration
