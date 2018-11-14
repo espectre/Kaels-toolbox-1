@@ -14,7 +14,7 @@ import numpy as np
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(cur_path,'../lib'))
-from io_util import inst_data_loader, load_checkpoint 
+from io_util import inst_data_loader
 from net_util import get_avail_models, init_model 
 from train_util import generic_train, LRScheduler 
 from config import merge_cfg_from_file

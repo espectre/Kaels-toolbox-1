@@ -165,7 +165,7 @@ __C.TRAIN.TRAIN_LST = ""
 __C.TRAIN.DEV_LST = "" 
 __C.TRAIN.TRAIN_IMG_PREFIX = ""
 __C.TRAIN.DEV_IMG_PREFIX = ""
-__C.TRAIN.PROCESS_THREAD = 4 
+__C.TRAIN.PROCESS_THREAD = 8 
 __C.TRAIN.INPUT_SHAPE = (3, 224, 224)
 __C.TRAIN.MEAN_RGB = [123.68, 116.779, 103.939] 
 __C.TRAIN.STD_RGB = [58.395, 57.12, 57.375] 
@@ -269,6 +269,7 @@ __C.TEST.MODEL_WEIGHTS = ""
 __C.TEST.KV_STORE = b"device" 
 __C.TEST.USE_GPU = True 
 __C.TEST.GPU_IDX = [0]     # only single gpu supported for now
+__C.TEST.PROCESS_THREAD = 16 
 __C.TEST.MUTABLE_IMAGES_TEST = False
 __C.TEST.BATCH_SIZE = 1 
 __C.TEST.INPUT_SHAPE = (3, 224, 224)
@@ -288,6 +289,11 @@ __C.TEST.LOG_ALL_CONFIDENCE = True
 __C.TEST.CAT_NAME_POS = 1
 __C.TEST.CAT_FILE_SPLIT = " "
 
+__C.TEST.NETWORK = "resnet" 
+__C.TEST.NUM_LAYERS = 50 
+__C.TEST.X_NUM_GROUPS = 32 
+__C.TEST.X_WIDTH_PER_GROUP = 4 
+__C.TEST.DROP_OUT = 0 
 # ---------------------------------------------------------------------------- #
 # Deprecated options
 # If an option is removed from the code and you don't want to break existing

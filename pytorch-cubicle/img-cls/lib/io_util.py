@@ -13,6 +13,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 from config import cfg
 from collections import OrderedDict
 
+NORM_SCALE = 255.0  # 0-255 -> 0-1
+
 class DummyDataset(pth_data.dataset.Dataset):
     def __init__(self, lst_path, trans_list, img_path_prefix=str(), delimiter=' '):
         """
@@ -153,8 +155,8 @@ def compose_transform_list(cfg_obj):
 
     result.append(transforms.ToTensor())
     result.append(transforms.Normalize(
-                mean=[x/255 for x in cfg_obj.MEAN_RGB],
-                std=[x/255 for x in cfg_obj.STD_RGB]
+                mean=[x/NORM_SCALE for x in cfg_obj.MEAN_RGB],
+                std=[x/NORM_SCALE for x in cfg_obj.STD_RGB]
                 ))
     logging.info('Data transformations:')
     for trans in result:
@@ -163,28 +165,49 @@ def compose_transform_list(cfg_obj):
     return result
 
 
-def inst_data_loader(data_train, data_dev, train_batch_size, dev_batch_size):
-    trans = {
-    'train': transforms.Compose(compose_transform_list(cfg.TRAIN)),
-    'dev': transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([x/256 for x in cfg.TRAIN.MEAN_RGB], [x/256 for x in cfg.TRAIN.STD_RGB])
-    ]),
-    }
-    
-    dataset_train = DummyDataset(data_train, trans['train'], img_path_prefix=cfg.TRAIN.TRAIN_IMG_PREFIX)  
-    dataset_dev = DummyDataset(data_dev, trans['dev'], img_path_prefix=cfg.TRAIN.DEV_IMG_PREFIX)  
+def inst_data_loader(data_train, data_dev, train_batch_size, dev_batch_size, test_only=False):
+    if test_only:   # test mode
+        trans = {
+        'test': transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([x/NORM_SCALE for x in cfg.TEST.MEAN_RGB], [x/NORM_SCALE for x in cfg.TEST.STD_RGB])
+        ]),
+        }
+        
+        dataset_test = DummyDataset(data_dev, trans['test'], img_path_prefix=cfg.TEST.INPUT_IMG_PREFIX)  
 
-    data_loader = {
-    'train': pth_data.DataLoader(dataset=dataset_train, batch_size=train_batch_size, shuffle=cfg.TRAIN.SHUFFLE, num_workers=cfg.TRAIN.PROCESS_THREAD),
-    'dev': pth_data.DataLoader(dataset=dataset_dev, batch_size=dev_batch_size, shuffle=False, num_workers=cfg.TRAIN.PROCESS_THREAD)
-    }
+        data_loader = {
+        'test': pth_data.DataLoader(dataset=dataset_test, batch_size=dev_batch_size, shuffle=False, num_workers=cfg.TEST.PROCESS_THREAD)
+        }
 
-    data_size = {'train': len(dataset_train), 'dev': len(dataset_dev)}
-    
-    return data_loader, data_size
+        data_size = {'test': len(dataset_test)}
+        
+        return data_loader, data_size
+
+    else:   # train mode
+        trans = {
+        'train': transforms.Compose(compose_transform_list(cfg.TRAIN)),
+        'dev': transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([x/NORM_SCALE for x in cfg.TRAIN.MEAN_RGB], [x/NORM_SCALE for x in cfg.TRAIN.STD_RGB])
+        ]),
+        }
+        
+        dataset_train = DummyDataset(data_train, trans['train'], img_path_prefix=cfg.TRAIN.TRAIN_IMG_PREFIX)  
+        dataset_dev = DummyDataset(data_dev, trans['dev'], img_path_prefix=cfg.TRAIN.DEV_IMG_PREFIX)  
+
+        data_loader = {
+        'train': pth_data.DataLoader(dataset=dataset_train, batch_size=train_batch_size, shuffle=cfg.TRAIN.SHUFFLE, num_workers=cfg.TRAIN.PROCESS_THREAD),
+        'dev': pth_data.DataLoader(dataset=dataset_dev, batch_size=dev_batch_size, shuffle=False, num_workers=cfg.TRAIN.PROCESS_THREAD)
+        }
+
+        data_size = {'train': len(dataset_train), 'dev': len(dataset_dev)}
+        
+        return data_loader, data_size
 
 
 def mixup_data(x, y, alpha=1.0, use_cuda=True):
@@ -205,12 +228,12 @@ def mixup_data(x, y, alpha=1.0, use_cuda=True):
     return mixed_x, y_a, y_b, lam
 
 
-def load_checkpoint(model_file, is_tar=False):
+def load_checkpoint(model_file, is_tar=False, rename_state_dict=False):
     '''
     '''
     _state_dict = t_load(model_file)
     state_dict = _state_dict['state_dict'] if is_tar else _state_dict
-    if cfg.TRAIN.FT.RENAME_STATE_DICT:
+    if rename_state_dict:
         renamed_state_dict = OrderedDict((k.replace('module.',''), v) for k, v in state_dict.viewitems())
         return renamed_state_dict
         # for key in state_dict:
@@ -224,7 +247,7 @@ def save_checkpoint(state, model_prefix, is_best=False):
         saved dict: {"epoch":, "state_dict":, "acc":, "optimizer":} 
     '''
     file_path = '{}-{:0>4}.pth.tar'.format(model_prefix, state["epoch"])
-    best_path = '{}-accbest-{:0>4}.pth.tar'.format(model_prefix, state["epoch"])
+    best_path = '{}-accbest.pth.tar'.format(model_prefix)
     t_save(state, file_path)
     if is_best:
         shutil.copyfile(file_path, best_path) 

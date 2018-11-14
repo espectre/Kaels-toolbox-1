@@ -107,7 +107,7 @@ def init_model(model_lib):
     # load pretrained weight
     if cfg.TRAIN.FINETUNE:
         model_file = cfg.TRAIN.FT.PRETRAINED_MODEL_WEIGHTS
-        model_weight = load_checkpoint(model_file, is_tar=model_file.endswith('.tar'))
+        model_weight = load_checkpoint(model_file, is_tar=model_file.endswith('.tar'), rename_state_dict=cfg.TRAIN.FT.RENAME_STATE_DICT)
         model.load_state_dict(model_weight)
     elif cfg.TRAIN.RESUME:
         pass    # TODO 
@@ -127,17 +127,19 @@ def init_forward_net(model_lib):
     '''
     '''
     # create network
-    if 'resnext' in cfg.TRAIN.NETWORK:
-        model = eval("model_lib.{}({},{})".format(cfg.TRAIN.NETWORK, cfg.TRAIN.SCR.X_WIDTH_PER_GROUP, cfg.TRAIN.SCR.X_NUM_GROUPS))
+    if 'resnext' in cfg.TEST.NETWORK:
+        model = eval("model_lib.{}({},{})".format(cfg.TEST.NETWORK, cfg.TEST.X_WIDTH_PER_GROUP, cfg.TEST.X_NUM_GROUPS))
     else:
-        model = eval("model_lib.{}()".format(cfg.TRAIN.NETWORK))
+        model = eval("model_lib.{}()".format(cfg.TEST.NETWORK))
 
     # load weight
     model_file = cfg.TEST.MODEL_WEIGHTS
-    model_weight = load_checkpoint(model_file, is_tar=model_file.endswith('.tar'))
+    model_weight = load_checkpoint(model_file, is_tar=model_file.endswith('.tar'), rename_state_dict=True)
     model.load_state_dict(model_weight)
 
-    # swith mode 
-    model.cuda().eval() 
+    # switch mode 
+    if cfg.TEST.USE_GPU:
+        model = torch.nn.DataParallel(model).cuda()
+    model.eval() 
     return model
 

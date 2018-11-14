@@ -17,24 +17,30 @@ class DSEBasicBlock(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes, 1)
         self.bn2 = nn.BatchNorm2d(planes)
-        self.se = SELayer(planes, reduction)
+        self.se = DSELayer(planes, reduction)
         self.downsample = downsample
         self.stride = stride
 
     def forward(self, x):
-        residual = x
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.se(out)
-
+        # out = self.se(out)
+        # (downsampled)residual path
         if self.downsample is not None:
             residual = self.downsample(x)
+        else:
+            residual = x
 
-        out += residual
+        # dse path
+        # dse a 
+        out = self.se(out, residual)
+        # dse b
+        # TODO 
+
         out = self.relu(out)
 
         return out
@@ -73,6 +79,7 @@ class DSEBottleneck(nn.Module):
             residual = self.downsample(x)
         else:
             residual = x
+
         # dse path
         # dse a 
         out = self.se(out, residual)
@@ -84,7 +91,7 @@ class DSEBottleneck(nn.Module):
         return out
 
 
-def dse_resnet18(num_classes):
+def dse_resnet18(num_classes=1000):
     """Constructs a ResNet-18 model.
 
     Args:
