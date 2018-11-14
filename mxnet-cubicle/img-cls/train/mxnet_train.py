@@ -130,7 +130,7 @@ def main():
     batch_size = batch_per_gpu * num_gpus
     log_interval = cfg.LOG_INTERVAL
     data_train, data_dev = (cfg.TRAIN_REC, cfg.DEV_REC) if cfg.USE_REC else (cfg.TRAIN_LST, cfg.DEV_LST)
-    train, dev = inst_iterators(data_train, data_dev, batch_size=batch_size, data_shape=cfg.INPUT_SHAPE, resize=cfg.RESIZE_SHAPE, resize_scale=cfg.RESIZE_SCALE, use_svm_label=cfg.USE_SVM)
+    train, dev = inst_iterators(data_train, data_dev, batch_size=batch_size, data_shape=cfg.INPUT_SHAPE, resize=cfg.RESIZE_SHAPE, resize_scale=cfg.RESIZE_SCALE, resize_area=cfg.RESIZE_AREA, use_svm_label=cfg.USE_SVM)
     
     # io testing mode
     if cfg.TEST_IO_MODE:
