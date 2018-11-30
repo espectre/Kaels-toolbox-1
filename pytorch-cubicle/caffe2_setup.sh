@@ -54,6 +54,7 @@ pip install \
 
 # ---- build ----
 # caffe2 has been merged into pytorch repo, and installation changed a lot
+# [PyTorch 1.0.0] NO NEED to build caffe2 seperately, just run ldconfig after pytorch is properly installed
 echo '==> clone and build...' 
 cd /opt/
 # Clone Caffe2's source code from our Github repository
