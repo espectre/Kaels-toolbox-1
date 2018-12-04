@@ -39,11 +39,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-11-13
+    Update: 2018-12-04
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/12/04  v5.2           support loading gluoncv pretrained-model 
     2018/11/13  v5.1           support xception 
     2018/11/13  v5.0           add new dataloader preprocess supported by MXNet 1.3 
     2018/10/19  v4.3           support NV-DALI 
@@ -142,7 +143,7 @@ def main():
         begin_epoch = cfg.FT.PRETRAINED_MODEL_EPOCH 
         layer_name = cfg.FT.FINETUNE_LAYER 
         logger.info("Finetune layer:".format(layer_name))
-        symbol, arg_params, aux_params = load_model(cfg.FT.PRETRAINED_MODEL_PREFIX, begin_epoch, gluon_style=False)
+        symbol, arg_params, aux_params = load_model(cfg.FT.PRETRAINED_MODEL_PREFIX, begin_epoch, gluon_style=cfg.FT.LOAD_GLUON_MODEL)
         svm = cfg.SVM_LOSS if cfg.USE_SVM else None
         reg_coeff = cfg.SVM_REG_COEFF if cfg.USE_SVM else None
         symbol, arg_params = general_finetune_model(symbol, arg_params, num_classes, layer_name=layer_name, use_svm=svm, reg_coeff=reg_coeff, gluon_style=False)
