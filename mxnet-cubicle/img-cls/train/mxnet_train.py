@@ -39,11 +39,13 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-11-13
+    Update: 2018-12-16
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/12/16  v5.3           support COSINE_DECAY learning rate 
+    2018/11/27  v5.2           fix random_resized_crop arg bug 
     2018/11/13  v5.1           support xception 
     2018/11/13  v5.0           add new dataloader preprocess supported by MXNet 1.3 
     2018/10/19  v4.3           support NV-DALI 

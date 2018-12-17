@@ -47,11 +47,12 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
     mean, std = cfg.TRAIN.MEAN_RGB, cfg.TRAIN.STD_RGB 
     assert len(mean)==3 and len(std)==3, logging.error("Mean or Std should be a list of 3 items")
     mean_r, mean_g, mean_b, std_r, std_g, std_b = mean[:] + std[:] 
-    max_random_scale, min_random_scale = resize_scale 
-    max_random_area, min_random_area = resize_area 
+    min_random_scale, max_random_scale = resize_scale 
+    min_random_area, max_random_area = resize_area 
     min_aspect_ratio = cfg.TRAIN.MIN_ASPECT_RATIO if cfg.TRAIN.MIN_ASPECT_RATIO else None
     logging.info('Input normalization : Mean-RGB {}, Std-RGB {}'.format([mean_r, mean_g, mean_b],[std_r, std_g, std_b]))
     logging.info('Input scale augmentation : Max-random-sclae {}, Min-random-scale {}'.format(max_random_scale, min_random_scale))
+    logging.info('Input area augmentation : Max-random-area {}, Min-random-area {}'.format(max_random_area, min_random_area))
     resize_train, resize_dev = resize
     label_name = 'softmax_label' if not use_svm_label else 'svm_label'
 
@@ -236,6 +237,7 @@ def np_img_preprocessing(img, as_float=True, **kwargs):
     # (h,w,c) => (c,h,w)
     img = np.swapaxes(img, 0, 2)
     img = np.swapaxes(img, 1, 2)
+    logging.debug('img value: \n{}'.format(img))
     return img
 
 

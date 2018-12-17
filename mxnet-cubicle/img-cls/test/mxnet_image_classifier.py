@@ -127,6 +127,15 @@ def main():
     kwargs['std_rgb'] = cfg.STD_RGB
     categories = load_category_list(cfg.INPUT_CAT_FILE, name_position=cfg.CAT_NAME_POS, split=cfg.CAT_FILE_SPLIT)
     symbol, arg_params, aux_params = load_model(cfg.MODEL_PREFIX, cfg.MODEL_EPOCH)
+    # ==== debugging ====
+    # output_group = ['softmax_output','data'] 
+    # for layer in symbol.get_internals().list_outputs():
+    #     # logging.debug('layer:{}'.format(layer))
+    #     if "output" in layer and 'softmax' not in layer:
+    #         output_group.append(layer)
+    # output_layers = mx.sym.Group([symbol.get_internals()[x] for x in output_group])
+    # model = init_forward_net(output_layers, arg_params, aux_params, batch_size, input_shape, ctx=devices, redefine_output_group=None, allow_missing=True, allow_extra=False)
+    # ===================
     model = init_forward_net(symbol, arg_params, aux_params, batch_size, input_shape, ctx=devices, redefine_output_group=None, allow_missing=True, allow_extra=False)
     # test
     if args['--single-img']:

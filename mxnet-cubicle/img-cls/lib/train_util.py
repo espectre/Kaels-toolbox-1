@@ -102,23 +102,34 @@ def _step_one_epoch(branch_idx, epoch, data_iters, nets, trainers, metrics, batc
     logging.info('Epoch[{}] Branch-{} Validation: {}={:.6f}'.format(epoch, branch_idx, name, val_acc))
 
 
-def inst_lr_scheduler(num_samples, batch_size, kv, begin_epoch=0, base_lr=0.1, lr_factor=1, step_epochs=None):
+def inst_lr_scheduler(num_samples, batch_size, kv, begin_epoch=0, base_lr=0.1, lr_factor=1, step_epochs=None, max_epochs=10, warmup_steps=0, warmup_begin_lr=0, warmup_mode='linear', mode="STEP_DECAY"):
     '''
     '''
-    if lr_factor >= 1 or not step_epochs:      # constant learning rate
+    if mode == 'CONSTANT':  # constant learning rate
+        logging.info('Using constant learning rate.')
         return base_lr, None
-    assert num_samples and batch_size, logging.error('Invalid number of samples or mini-batch size per gpu')
-    epoch_size = int(math.ceil(num_samples/batch_size))     # on all gpus
-    if 'dist' in kv.type:       # distributed job
-        epoch_size /= kv.num_workers
-    lr = base_lr
-    for s in step_epochs:
-        if begin_epoch >= s:
-            lr *= lr_factor 
-    if lr != base_lr:
-        logging.info('Adjust learning rate to %e for epoch %d'%(lr, begin_epoch))
-    steps = [epoch_size*(x-begin_epoch) for x in step_epochs if x-begin_epoch>0]
-    return lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=lr_factor)
+    elif mode == 'STEP_DECAY':
+        logging.info('Using step_dacay mode to update learning rate.')
+        assert num_samples and batch_size, logging.error('Invalid number of samples or mini-batch size per gpu')
+        epoch_size = int(math.ceil(num_samples/batch_size))     # on all gpus
+        if 'dist' in kv.type:       # distributed job
+            epoch_size /= kv.num_workers
+        lr = base_lr
+        for s in step_epochs:
+            if begin_epoch >= s:
+                lr *= lr_factor 
+        if lr != base_lr:
+            logging.info('Adjust learning rate to %e for epoch %d'%(lr, begin_epoch))
+        steps = [epoch_size*(x-begin_epoch) for x in step_epochs if x-begin_epoch>0]
+        return lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=lr_factor)
+    elif mode == 'COSINE_DECAY':    # mxnet_version >= 1.4.0
+        epoch_size = int(math.ceil(num_samples/batch_size))     # on all gpus
+        if 'dist' in kv.type:       # distributed job
+            epoch_size /= kv.num_workers
+        logging.info('Using cosine_dacay mode to update learning rate.')
+        max_update = epoch_size * max_epochs
+        lr = base_lr
+        return lr, mx.lr_scheduler.CosineScheduler(max_update, base_lr=base_lr, final_lr=0, warmup_steps=warmup_steps, warmup_begin_lr=warmup_begin_lr, warmup_mode=warmup_mode)
 
 
 def inst_eval_metrics(lst_metrics, top_k=5):
@@ -268,7 +279,7 @@ def generic_train(train_iter, dev_iter, symbol, arg_params, aux_params, num_samp
     checkpoint = save_model(cfg.TRAIN.OUTPUT_MODEL_PREFIX, kv.rank)
     devices = [mx.gpu(x) for x in cfg.TRAIN.GPU_IDX] if cfg.TRAIN.USE_GPU else mx.cpu() 
     label_names = ['softmax_label'] if cfg.TRAIN.USE_SOFTMAX else ['svm_label']
-    lr, lr_scheduler = inst_lr_scheduler(num_samples, batch_size, kv, begin_epoch=begin_epoch, base_lr=cfg.TRAIN.BASE_LR, lr_factor=cfg.TRAIN.LR_FACTOR, step_epochs=cfg.TRAIN.STEP_EPOCHS) 
+    lr, lr_scheduler = inst_lr_scheduler(num_samples, batch_size, kv, begin_epoch=begin_epoch, base_lr=cfg.TRAIN.BASE_LR, lr_factor=cfg.TRAIN.LR_FACTOR, step_epochs=cfg.TRAIN.STEP_EPOCHS, max_epochs=cfg.TRAIN.MAX_EPOCHS, warmup_steps=cfg.TRAIN.WARMUP_STEPS, warmup_begin_lr=cfg.TRAIN.WARMUP_BEGIN_LR, warmup_mode=cfg.TRAIN.WARMUP_MODE, mode=cfg.TRAIN.LR_DECAY_MODE) 
     optimizer_params = {'learning_rate': lr,
                         'momentum': cfg.TRAIN.MOMENTUM,
                         'wd': cfg.TRAIN.WEIGHT_DECAY, 

@@ -256,6 +256,14 @@ def single_image_test(model, image_path, categories, input_shape, img_preproc_kw
 
     # forward
     model.forward(Batch([img_batch]))
+    # ==== debug ====
+    # logging.debug(model.output_names)
+    # for idx,layer in enumerate(model.output_names):
+    #     layer_output = model.get_outputs()[idx].asnumpy()
+    #     logging.debug('==> [{}]:{} {}\n{}'.format(idx, layer, layer_output.shape, layer_output[0,...]))
+    #     if ("0" in layer or "bn_data" in layer) and "flatten" not in layer: 
+    #         logging.debug('==> [{}]:{} {}\n{}'.format(idx, layer, layer_output.shape, layer_output[0,0,:10,:10]))
+    # ===============
     output_prob_batch = model.get_outputs()[0].asnumpy()
     if multi_crop_ave:
         # 3x3:[[cls_0],[cls_1],[cls_2]] -> 3x1:[cls_0_avg,cls_1_avg,cls_2_avg]

@@ -202,11 +202,15 @@ __C.TRAIN.LAST_BATCH_HANDLE = "pad"
 
 # ---- optimizer hyper params ----
 __C.TRAIN.OPTIMIZER = b"sgd"
+__C.TRAIN.LR_DECAY_MODE = b"STEP_DECAY"
 __C.TRAIN.BASE_LR = 0.1
 __C.TRAIN.LR_FACTOR = 0.1
 __C.TRAIN.STEP_EPOCHS = list() 
 __C.TRAIN.WEIGHT_DECAY = 0.0005
 __C.TRAIN.MOMENTUM = 0.9
+__C.TRAIN.WARMUP_STEPS = 0
+__C.TRAIN.WARMUP_BEGIN_LR = 0
+__C.TRAIN.WARMUP_MODE = 'linear' 
 
 # ---- classfier hyper params ----
 __C.TRAIN.NUM_CLASSES = 1000 
