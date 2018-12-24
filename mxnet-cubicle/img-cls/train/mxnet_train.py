@@ -39,11 +39,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-12-16
+    Update: 2018-12-24
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2018/12/24  v5.5           support softmax label smoothing 
     2018/12/16  v5.4           support COSINE_DECAY learning rate 
     2018/12/04  v5.3           support loading gluoncv pretrained-model 
     2018/11/27  v5.2           fix random_resized_crop arg bug 
@@ -148,7 +149,8 @@ def main():
         symbol, arg_params, aux_params = load_model(cfg.FT.PRETRAINED_MODEL_PREFIX, begin_epoch, gluon_style=cfg.FT.LOAD_GLUON_MODEL)
         svm = cfg.SVM_LOSS if cfg.USE_SVM else None
         reg_coeff = cfg.SVM_REG_COEFF if cfg.USE_SVM else None
-        symbol, arg_params = general_finetune_model(symbol, arg_params, num_classes, layer_name=layer_name, use_svm=svm, reg_coeff=reg_coeff, gluon_style=False)
+        softmax_smooth_alpha = cfg.SOFTMAX_SMOOTH_ALPHA
+        symbol, arg_params = general_finetune_model(symbol, arg_params, num_classes, layer_name=layer_name, softmax_smooth_alpha=softmax_smooth_alpha, use_svm=svm, reg_coeff=reg_coeff, gluon_style=False)
     elif cfg.RESUME:
         begin_epoch = cfg.RES.MODEL_EPOCH 
         symbol, arg_params, aux_params = load_model(cfg.RES.MODEL_PREFIX, begin_epoch, gluon_style=False)

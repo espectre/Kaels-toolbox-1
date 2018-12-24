@@ -7,7 +7,7 @@ import logging
 import mxnet as mx
 
 
-def general_finetune_model(symbol, arg_params, num_classes, layer_name='flatten0', use_svm=None, reg_coeff=None, gluon_style=False, ctx=None):
+def general_finetune_model(symbol, arg_params, num_classes, layer_name='flatten0', softmax_smooth_alpha=0, use_svm=None, reg_coeff=None, gluon_style=False, ctx=None):
     '''
     define the function which replaces the the last fully-connected layer for a given network
     symbol: the pre-trained network symbol
@@ -24,7 +24,21 @@ def general_finetune_model(symbol, arg_params, num_classes, layer_name='flatten0
         assert reg_coeff is not None, "Regularization coefficient is needed for svm classifier"
         net = mx.symbol.SVMOutput(data=net, name='svm', regularization_coefficient=reg_coeff) if use_svm == 'l2' else mx.symbol.SVMOutput(data=net, name='svm', use_linear=1, regularization_coefficient=reg_coeff)
     else:
-        net = mx.symbol.SoftmaxOutput(data=net, name='softmax')
+        # old version of SoftmaxOutput
+        # net = mx.symbol.SoftmaxOutput(data=net, name='softmax')
+        # new version of SoftmaxOutput, mxnet>=1.5.0
+        net = mx.symbol.SoftmaxOutput(
+                data=net,
+                # label=label,
+                name='softmax',
+                grad_scale=1,
+                ignore_label=-1,
+                multi_output=0,
+                use_ignore=0,
+                preserve_shape=0,
+                normalization='null',
+                out_grad=0,
+                smooth_alpha=softmax_smooth_alpha)
     new_args = dict({k: arg_params[k] for k in arg_params if 'fc' not in k})
     return net, new_args
 
