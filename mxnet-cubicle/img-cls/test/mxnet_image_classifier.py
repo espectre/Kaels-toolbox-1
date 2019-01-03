@@ -40,11 +40,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Inference script for image-classification task on mxnet
-    Update: 2018-09-30 15:31:29 
+    Update: 2019-01-03 
     Author: @Northrend
     Contributor: 
 
     Change log:
+    2019/01/03  v3.5                fix category list sort bug 
     2018/09/30  v3.4                support parallelized image pre-processing
     2018/07/23  v3.3                fix testing bug caused by mxnet v1.0.0
     2018/06/22  v3.2                support mutable images testing

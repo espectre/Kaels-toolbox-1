@@ -22,6 +22,7 @@ def _init_():
     Contributor: 
 
     Change log:
+    2019/01/02  v2.2                    fix catrgory list sorting bug
     2018/06/12  v2.1                    convert detection annotations to oiv4 style 
     2018/03/28  v2.0                    adapt new ava json standard
     2018/02/08  v1.2                    fix json syntax bug
@@ -74,7 +75,7 @@ def get_category(category_path):
     with open(category_path, 'r') as f:
         for buff in f:
             label_list.append(tuple(buff.strip().split(',')))
-        label_list_sort = sorted(label_list, key=lambda x: x[0])
+        label_list_sort = sorted(label_list, key=lambda x: int(x[0]))
     category = [item[1] for item in label_list_sort]
     return category
 

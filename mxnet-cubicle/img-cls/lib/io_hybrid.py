@@ -394,7 +394,7 @@ def load_category_list(cat_file, name_position=1, split=None):
             elif ',' in buff.strip():
                 split = ','
             tup_list.append(buff.strip().split(split)) 
-    category_list = [tup[name_position] for tup in sorted(tup_list, key=lambda x:x[1-name_position])]
+    category_list = [tup[name_position] for tup in sorted(tup_list, key=lambda x:int(x[1-name_position]))]
     logging.debug(category_list)
     return category_list 
     
