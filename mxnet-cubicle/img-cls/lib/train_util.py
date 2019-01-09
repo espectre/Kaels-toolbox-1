@@ -122,7 +122,11 @@ def inst_lr_scheduler(num_samples, batch_size, kv, begin_epoch=0, base_lr=0.1, l
         if lr != base_lr:
             logging.info('Adjust learning rate to %e for epoch %d'%(lr, begin_epoch))
         steps = [epoch_size*(x-begin_epoch) for x in step_epochs if x-begin_epoch>0]
-        return lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=lr_factor, base_lr=base_lr, warmup_steps=warmup_steps, warmup_begin_lr=warmup_begin_lr, warmup_mode=warmup_mode)
+        if float('.'.join(mx.__version__.split('.')[:2])) < 1.5:    # lower version 
+            logging.warning('Warmup is not supported on mxnet version lower than 1.5.0!')
+            return lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=lr_factor)
+        else:
+            return lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=lr_factor, base_lr=base_lr, warmup_steps=warmup_steps, warmup_begin_lr=warmup_begin_lr, warmup_mode=warmup_mode)
     elif mode == 'COSINE_DECAY':    # mxnet_version >= 1.4.0
         epoch_size = int(math.ceil(num_samples/batch_size))     # on all gpus
         if 'dist' in kv.type:       # distributed job

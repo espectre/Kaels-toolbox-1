@@ -7,14 +7,7 @@
 #
 
 from __future__ import print_function
-import sys
-import os
-import time
-import math
-import re
-import logging
-import docopt
-import pprint
+import sys, os, time, math, re, logging, pprint, docopt
 import mxnet as mx
 from importlib import import_module
 from operator_py import svm_metric 
@@ -39,11 +32,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-12-24
+    Update: 2019-01-09 
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2019/01/09  v5.6           compatiable with mxnet v1.3.0 for dcnv2 
     2018/12/24  v5.5           support softmax label smoothing 
     2018/12/16  v5.4           support COSINE_DECAY learning rate 
     2018/12/04  v5.3           support loading gluoncv pretrained-model 
@@ -145,7 +139,7 @@ def main():
     if cfg.FINETUNE:
         begin_epoch = cfg.FT.PRETRAINED_MODEL_EPOCH 
         layer_name = cfg.FT.FINETUNE_LAYER 
-        logger.info("Finetune layer:".format(layer_name))
+        logger.info("Finetune layer:{}".format(layer_name))
         symbol, arg_params, aux_params = load_model(cfg.FT.PRETRAINED_MODEL_PREFIX, begin_epoch, gluon_style=cfg.FT.LOAD_GLUON_MODEL)
         svm = cfg.SVM_LOSS if cfg.USE_SVM else None
         reg_coeff = cfg.SVM_REG_COEFF if cfg.USE_SVM else None
