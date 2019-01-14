@@ -1,7 +1,7 @@
 #!/bin/bash
 
 i=0;
-for file in `cat "$1"|cut -f1 -d' '`;
+for file in `cat "$1"|cut -f 1 -d ' '`;
 do
   if [ ! -f "$file" ];
   then

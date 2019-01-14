@@ -32,7 +32,7 @@ def _init_():
                                      [ -c | --classification]
                                      [ -d | --detection ]
                                      [ -l | --clustering ]
-                                     [--prefix=str --sub-task=str --pre-json=str --pre-label=str]
+                                     [--prefix=str --sub-task=str --pre-json=str --pre-label=str --url-map=str]
         gen_ava_jsonlist.py          -v | --version
         gen_ava_jsonlist.py          -h | --help
 
@@ -51,6 +51,7 @@ def _init_():
         --sub-task=str                  sub-task type such as general, pulp, terror, places.
         --pre-json=str                  optional pre-annotation json, required under clusering task.
         --pre-label=str                 optional pre-annotation label, such as "cat".
+        --url-map=str                   optional file2url json map.
     '''
     print('=' * 80 + '\nArguments submitted:')
     for key in sorted(args.keys()):
@@ -64,14 +65,44 @@ class input_syntax_err(Exception):
     '''
     pass
 
-def generate_dict(filename, prefix, classification=False, detection=False, clustering=False, sub_task=None, pre_ann=None, pre_label=None):
+
+def read_labels(input_file):
+    dct = dict()
+    with open(input_file) as f:
+        for buff in f.readlines():
+            img = buff.strip().split()[0]
+            dct[img] = int(buff.strip().split()[1])
+    print('{} pre label loaded.'.format(len(dct)))
+    return dct
+
+
+def generate_dict(filename, prefix, classification=False, detection=False, clustering=False, sub_task=None, pre_ann=None, pre_label=None, url_map=None):
     temp = dict()
-    temp['url'] = os.path.join(prefix,filename) if prefix else filename
+    if url_map:
+        if filename not in url_map:
+            print(filename)
+            if filename.startswith("Image-tupu-"):
+                temp['url'] = 'http://oi7xsjr83.bkt.clouddn.com/'+filename
+            elif filename.startswith("pulp-"):
+                temp['url'] = 'http://oquqvdmso.bkt.clouddn.com/atflow-log-proxy/images/'+filename
+            elif filename.startswith("screenshot_mobile_"):
+                temp['url'] = 'http://p28cyzi19.bkt.clouddn.com/screenshot_mobile/'+filename
+            elif filename.startswith("screenshot_pc_"):
+                temp['url'] = 'http://p28cyzi19.bkt.clouddn.com/screenshot_pc/'+filename
+            elif filename.startswith("blademaster_1228"):
+                temp['url'] = 'http://pbzod2s8y.bkt.clouddn.com/blademaster_1228/Image/'+filename
+            else:
+                assert 0
+        else:
+            temp['url'] = url_map[filename]
+    else: 
+        temp['url'] = os.path.join(prefix,filename) if prefix else filename
     # temp['ops'] = 'download()'
     # temp['source_url'] = temp['url']
     temp['type'] = 'image'
     temp['label'] = list() 
     pulp_label = ['pulp', 'sexy', 'normal']
+    custom_cats = ['generic_porn', 'generic_obscene', 'int_sex_con', 'alm_naked', 'close_up', 'flirt_sex_con', 'baby_gen', 'sex_toy', 'generic_sexy', 'ani_sexy', 'sli_hot', 'generic_normal'] 
     if classification:
         tmp = dict()
         tmp['type'] = 'classification'
@@ -80,12 +111,12 @@ def generate_dict(filename, prefix, classification=False, detection=False, clust
         tmp['data'] = list()
         if pre_ann:
             # ---- modify pre-annotated label here ----
-            # temp['label']['class'][sub_task] = pre_ann[filename]
+            # tmp['data'].append({'class': custom_cats[pre_ann[filename]]})
             pass
             # -----------------------------------------
         elif pre_label:
             # tmp['data'].append({'class': pulp_label[pre_label]})
-            tmp['data'].append({'class': pulp_label[int(pre_label)]})
+            tmp['data'].append({'class': custom_cats[int(pre_label)]})
         temp['label'].append(tmp)
     if detection:
         tmp = dict()
@@ -120,6 +151,7 @@ def main():
     pre_ann = json.load(open(args['--pre-json'], 'r')
                         ) if args['--pre-json'] else None
     pre_label = args['--pre-label'] if args['--pre-label'] else None
+    url_map = json.load(open(args['--url-map'], 'r')) if args['--url-map'] else None
     with open(args['<in-file>'], 'r') as f:         # load input file list
         file_lst = list()
         for buff in f:
@@ -135,7 +167,7 @@ def main():
         for image in file_lst:
             if len(image.strip().split()) == 2:
                 pre_label = image.strip().split()[1]
-            temp_dict = generate_dict(image.split()[0], args['--prefix'], args['--classification'], args['--detection'], args['--clustering'], sub_task, pre_ann, pre_label=pre_label)
+            temp_dict = generate_dict(image.split()[0], args['--prefix'], args['--classification'], args['--detection'], args['--clustering'], sub_task, pre_ann, pre_label=pre_label, url_map=url_map)
             f.write('{}\n'.format(json.dumps(temp_dict)))
 
 

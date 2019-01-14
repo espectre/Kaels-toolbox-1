@@ -10,14 +10,26 @@ import mxnet as mx
 
 EPS = 1e-5
 
+def modulated_deformable_conv(data, name, num_filter, stride, lr_mult=0.1):
+    # act1 = data    # mock
+    weight_var = mx.sym.Variable(name=name+'_offset_weight', init=mx.init.Zero(), lr_mult=lr_mult)
+    bias_var = mx.sym.Variable(name=name+'_offset_bias', init=mx.init.Zero(), lr_mult=lr_mult)
+    conv_offset = mx.symbol.Convolution(name=name + '_offset', data=data, num_filter=27,
+                       pad=(2, 2), kernel=(3, 3), stride=stride, weight=weight_var, bias=bias_var, lr_mult=lr_mult)
+    conv_offset_t = mx.sym.slice_axis(conv2_offset, axis=1, begin=0, end=18)
+    conv_mask =  mx.sym.slice_axis(conv2_offset, axis=1, begin=18, end=None)
+    conv_mask = 2 * mx.sym.Activation(conv2_mask, act_type='sigmoid')
+
+    # conv = mx.contrib.symbol.ModulatedDeformableConvolution(name=name, data=act1, offset=conv_offset_t, mask=conv_mask,
+    conv = mx.contrib.symbol.ModulatedDeformableConvolution(name=name, data=data, offset=conv_offset_t, mask=conv_mask,
+                       num_filter=num_filter, pad=(2, 2), kernel=(3, 3), stride=stride,
+                       num_deformable_group=1, no_bias=True)
+    return conv
+
 def get_resnet_v1_conv5(num_classes, dcn_switch=[0 for x in xrange(5)]):
     data = mx.sym.Variable(name='data')
     # conv 1-4
-    if dcn_switch[0]:
-        conv1 = mx.symbol.Convolution(name='conv1', data=data, num_filter=64, pad=(3, 3), kernel=(7, 7), stride=(2, 2),
-                                  no_bias=True)
-    else:
-        conv1 = mx.symbol.Convolution(name='conv1', data=data, num_filter=64, pad=(3, 3), kernel=(7, 7), stride=(2, 2),
+    conv1 = mx.symbol.Convolution(name='conv1', data=data, num_filter=64, pad=(3, 3), kernel=(7, 7), stride=(2, 2),
                                   no_bias=True)
     bn_conv1 = mx.symbol.BatchNorm(name='bn_conv1', data=conv1, use_global_stats=True, fix_gamma=False, eps=EPS)
     scale_conv1 = bn_conv1
@@ -618,7 +630,10 @@ def get_resnet_v1_conv5(num_classes, dcn_switch=[0 for x in xrange(5)]):
                                         fix_gamma=False, eps=EPS)
     scale5a_branch2a = bn5a_branch2a
     res5a_branch2a_relu = mx.symbol.Activation(name='res5a_branch2a_relu', data=scale5a_branch2a, act_type='relu')
-    res5a_branch2b = mx.symbol.Convolution(name='res5a_branch2b', data=res5a_branch2a_relu, num_filter=512, pad=(2, 2),
+    if dcn_switch[4]:
+        res5a_branch2b = modulated_deformable_conv(res5a_branch2a_relu, 'res5a_branch2b', 512, (1,1), lr_mult=0.1) 
+    else:
+        res5a_branch2b = mx.symbol.Convolution(name='res5a_branch2b', data=res5a_branch2a_relu, num_filter=512, pad=(2, 2),
                                            kernel=(3, 3), stride=(1, 1), dilate=(2, 2), no_bias=True)
     bn5a_branch2b = mx.symbol.BatchNorm(name='bn5a_branch2b', data=res5a_branch2b, use_global_stats=True,
                                         fix_gamma=False, eps=EPS)
