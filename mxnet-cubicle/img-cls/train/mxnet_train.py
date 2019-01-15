@@ -32,11 +32,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2019-01-09 
+    Update: 2019-01-15 
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2019/01/15  v5.7           support shufflenet v1 & v2 
     2019/01/09  v5.6           compatiable with mxnet v1.3.0 for dcnv2 
     2018/12/24  v5.5           support softmax label smoothing 
     2018/12/16  v5.4           support COSINE_DECAY learning rate 
