@@ -22,8 +22,8 @@ import pprint
 # REMOTE_API = "http://atnet-apiserver.ava.k8s-xs.qiniu.io/"
 # REMOTE_API = "http://atnet-apiserver.ava-staging.k8s-xs.qiniu.io/"
 # REMOTE_API = "http://atnet-apiserver.ava-staging.ke-xs.cloudappl.com/"  # outer
-REMOTE_API = "http://atnet-apiserver.ava-prd-jq.ke-xs.cloudappl.com/"  # outer
 # REMOTE_API = "http://atnet-apiserver-internal.ava-staging.k8s-xs.qiniu.io/" # intra
+REMOTE_API = "http://atnet-apiserver.ava-prd-jq.ke-xs.cloudappl.com/"  # outer
 
 
 def _init_():
@@ -31,6 +31,7 @@ def _init_():
     Export service logs using atflow log proxy
 
     Change log:
+    2019/01/16      v2.0                support setting remote api host 
     2018/11/12      v1.4                update remote api prd 
     2018/08/09      v1.3                optimze job id logging
     2018/05/23      v1.2                update remote api staging
@@ -39,7 +40,7 @@ def _init_():
 
     Usage:
         log_proxy.py                    <infile> [-s|--start -c|--check] 
-                                        [--job-id=str --job-id-log=str]
+                                        [--job-id=str --job-id-log=str --host=str]
         log_proxy.py                    -v|--version
         log_proxy.py                    -h|--help
 
@@ -54,6 +55,7 @@ def _init_():
         ------------------------------------------------------------------
         --job-id=str                    job id, needed in checking task
         --job-id-log=str                file to save job id [default: job_id.log]
+        --host=str                      customized remote api host
     """
     print('=' * 80 + '\nArguments submitted:')
     for key in sorted(args.keys()):
@@ -63,7 +65,7 @@ def _init_():
 
 def exportlogs(ak, sk, cmd, start_time, end_time, uids=[],
                query="label[?type=='classification' && name=='pulp']",
-               key="", bucket="ava-test", prefix="exportlogs/"):
+               key="", bucket="ava-test", prefix="exportlogs/", remote=None):
     """Submit a job to export serving logs.
 
     Args:
@@ -83,7 +85,7 @@ def exportlogs(ak, sk, cmd, start_time, end_time, uids=[],
         json of the job id: {"id":"5a8f83b058a9b60001ca3129"}
     """
     factory = AuthFactory(ak, sk)
-    url = REMOTE_API + "v1/dataflows/exportlogs"
+    url = remote + "v1/dataflows/exportlogs"
     if key == "":
         id = str(uuid.uuid1())
         now = datetime.now()
@@ -106,7 +108,7 @@ def exportlogs(ak, sk, cmd, start_time, end_time, uids=[],
     return ret
 
 
-def exportstate(ak, sk, id):
+def exportstate(ak, sk, id, remote=None):
     """Get job state.
 
     Args:
@@ -127,7 +129,7 @@ def exportstate(ak, sk, id):
         "specVersion":"v1"}
     """
     factory = AuthFactory(ak, sk)
-    url = REMOTE_API + "v1/dataflows/" + id
+    url = remote + "v1/dataflows/" + id
     res = requests.get(url, auth=factory.get_qiniu_auth())
     ret = json.loads(res.content)
     return ret
@@ -140,6 +142,9 @@ def main():
     ak = conf.get('keys', 'ak')
     sk = conf.get('keys', 'sk')
     assert (ak and sk), 'invalid aksk'
+    remote_api = args['--host'] if args['--host'] else REMOTE_API
+    assert remote_api, 'invalid api host'
+    print('=> API host:', remote_api)
     if args['--start']:
         cmd = conf.get('params', 'cmd')
         st = conf.get('params', 'start_time')
@@ -149,18 +154,18 @@ def main():
         key = conf.get('params', 'key')
         bkt = conf.get('params', 'bucket')
         pfx = conf.get('params', 'prefix')
-        ret = exportlogs(ak, sk, cmd, st, et, uids=uid, query=q, key=key, bucket=bkt, prefix=pfx)
+        ret = exportlogs(ak, sk, cmd, st, et, uids=uid, query=q, key=key, bucket=bkt, prefix=pfx, remote=remote_api)
         print('=> Job id: ')
         pprint.pprint(ret)
         print('=> Job status: ')
-        _ = exportstate(ak, sk, ret['id'])
+        _ = exportstate(ak, sk, ret['id'], remote=remote_api)
         pprint.pprint(_)
         with open(args['--job-id-log'], 'a') as f:
             f.write('{} => {}\n'.format(datetime.now().strftime("%Y-%m-%d-%H:%M:%S"), ret['id']))
         print('=> Job id saved in', args['--job-id-log'])
     elif args['--check']:
         assert args['--job-id'], 'checking job status task needs one job-id'
-        ret = exportstate(ak, sk, args['--job-id'])
+        ret = exportstate(ak, sk, args['--job-id'], remote=remote_api)
         print('=> Job status: ')
         pprint.pprint(ret)
     else:

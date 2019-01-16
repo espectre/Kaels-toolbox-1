@@ -21,14 +21,16 @@ ERROR_NUMBER = 0
 DOWNLOAD_NUMBER = 1
 FILE_NAME = str()
 SS_HOST = "nbxs-gate-io.qiniu.com" 
+TIMEOUT = 180    # set default timeout for wget as 600 sec
 
 
 def _init_():
     """
     Multi-threading downloader script
-    Update: 2018/09/04
+    Update: 2019/01/14
 
     Change log:
+    2019/01/14      v1.6                support wget timeout 
     2018/09/04      v1.5                support download via source station proxy
     2018/08/06      v1.4                optimize std out
     2018/03/05      v1.3                fix bug
@@ -125,7 +127,8 @@ class cons_worker(threading.Thread):
                 domain = url.split('/')[2]
                 cmd = 'curl {} -H "Host: {}" -o {} > /dev/null 2>&1 '.format(url.replace(domain, SS_HOST), domain, output_path)
             else:
-                cmd = 'wget -q -O {} {}'.format(output_path, url)
+                # cmd = 'wget -q -O {} "{}"'.format(output_path, url)
+                cmd = 'wget -q -T {} -O {} "{}"'.format(TIMEOUT, output_path, url)
             if os.system(cmd) != 0:
                 print('=> download ERROR:', url)
                 err_num += 1
