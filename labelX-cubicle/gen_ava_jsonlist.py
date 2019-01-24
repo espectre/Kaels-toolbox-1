@@ -101,8 +101,10 @@ def generate_dict(filename, prefix, classification=False, detection=False, clust
     # temp['source_url'] = temp['url']
     temp['type'] = 'image'
     temp['label'] = list() 
-    pulp_label = ['pulp', 'sexy', 'normal']
-    custom_cats = ['generic_porn', 'generic_obscene', 'int_sex_con', 'alm_naked', 'close_up', 'flirt_sex_con', 'baby_gen', 'sex_toy', 'generic_sexy', 'ani_sexy', 'sli_hot', 'generic_normal'] 
+    # custom_cats = ['pulp', 'sexy', 'normal']
+    custom_cats = ['generic_porn', 'ani_porn', 'generic_obscene', 'int_sex_con', 'alm_naked', 'close_up', 'flirt_sex_con', 'baby_gen', 'sex_toy', 'generic_sexy', 'ani_sexy', 'sli_hot', 'generic_normal'] 
+    # custom_cats = ['generic_porn', 'int_sex_con', 'generic_normal']
+    # custom_cats = ['ani_porn', 'ani_sexy', 'generic_normal']
     if classification:
         tmp = dict()
         tmp['type'] = 'classification'
@@ -111,8 +113,11 @@ def generate_dict(filename, prefix, classification=False, detection=False, clust
         tmp['data'] = list()
         if pre_ann:
             # ---- modify pre-annotated label here ----
-            # tmp['data'].append({'class': custom_cats[pre_ann[filename]]})
-            pass
+            if filename in pre_ann:
+                tmp['data'].append({'class': custom_cats[int(pre_ann[filename]["Top-1 Index"][0])]})
+            else:
+                print('File missing:', filename)
+            # pass
             # -----------------------------------------
         elif pre_label:
             # tmp['data'].append({'class': pulp_label[pre_label]})
