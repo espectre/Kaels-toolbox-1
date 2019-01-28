@@ -38,7 +38,7 @@ def load_annotations(csv_path):
     with open(csv_path,'r') as f:
         for idx, buff in enumerate(f.readlines()[1:]):
             tmp = dict()
-            tmp['ImageIndex'] = idx
+            tmp['BoxIndex'] = idx
             tmp['ImageID'],tmp['Source'],tmp['LabelName'],tmp['Confidence'],tmp['XMin'],tmp['XMax'],tmp['YMin'],tmp['YMax'] = buff.strip().split(',')[:8]
             # tmp['Width'], tmp['Height'] = 1024, 768
             tmp['XMin'],tmp['XMax'],tmp['YMin'],tmp['YMax'] = _round_coors([tmp['XMin'],tmp['XMax'],tmp['YMin'],tmp['YMax']]) 

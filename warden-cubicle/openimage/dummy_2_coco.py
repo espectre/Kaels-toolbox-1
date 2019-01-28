@@ -63,7 +63,7 @@ def main():
         # write images
         tmp = dict()
         tmp['id'] = item['ImageID']
-        # tmp['id'] = item['ImageIndex']
+        # tmp['id'] = item['BoxIndex']
         tmp['file_name'] = item['ImageID'] + ext 
         tmp_img_path = os.path.join(img_path, tmp['file_name'])
         if OPENCV_CHECK:
@@ -97,7 +97,7 @@ def main():
         tmp = dict()
         tmp['id'] = count
         tmp['image_id'] = item['ImageID']
-        # tmp['image_id'] = item['ImageIndex']
+        # tmp['image_id'] = item['BoxIndex']
         tmp['category_id'] = cat.index(item['LabelName']) + 1    # start from 1
         tmp['segmentation'] = list() 
         # bbox = [x,y,w,h]
