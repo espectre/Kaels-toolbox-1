@@ -101,8 +101,8 @@ def generate_dict(filename, prefix, classification=False, detection=False, clust
     # temp['source_url'] = temp['url']
     temp['type'] = 'image'
     temp['label'] = list() 
-    # custom_cats = ['pulp', 'sexy', 'normal']
-    custom_cats = ['generic_porn', 'ani_porn', 'generic_obscene', 'int_sex_con', 'alm_naked', 'close_up', 'flirt_sex_con', 'baby_gen', 'sex_toy', 'generic_sexy', 'ani_sexy', 'sli_hot', 'generic_normal'] 
+    custom_cats = ['pulp', 'sexy', 'normal']
+    # custom_cats = ['generic_porn', 'ani_porn', 'generic_obscene', 'int_sex_con', 'alm_naked', 'close_up', 'flirt_sex_con', 'baby_gen', 'sex_toy', 'generic_sexy', 'ani_sexy', 'sli_hot', 'generic_normal'] 
     # custom_cats = ['generic_porn', 'int_sex_con', 'generic_normal']
     # custom_cats = ['ani_porn', 'ani_sexy', 'generic_normal']
     if classification:

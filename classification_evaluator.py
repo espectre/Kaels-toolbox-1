@@ -7,6 +7,7 @@
 #
 
 
+from __future__ import print_function
 import os
 import sys
 import json
@@ -19,6 +20,7 @@ import seaborn
 import pandas
 import re
 import logging
+import numpy as np
 
 
 POSITIVE = 1
@@ -34,11 +36,12 @@ logger = logging.getLogger()
 def _init_():
     '''
     Evalutaion script for image-classification task
-    Update: 2018/06/01
+    Update: 2019/01/31
     Author: @Northrend
     Contributor:
 
     Change log:
+    2019/01/31      v2.3            support loss computing mode 
     2018/06/04      v2.2            fix basename bug 
     2018/06/01      v2.1            fix numeric bug 
     2018/02/08      v2.0            support save error log
@@ -52,7 +55,8 @@ def _init_():
 
     Usage:
         classification_evaluator.py     <in-log> <out-path> (--gt=str)
-                                        [-s|--service] [-c|--conf-mat] [-a|--all-labels] [-e|--err-log] [-b|--base-name]
+                                        [-s|--service] [-c|--conf-mat] [-a|--all-labels] 
+                                        [-e|--err-log] [-b|--base-name] [-l|--loss]
                                         [--log-lv=str --pos=int --label=str --nrop]
                                         [--top-k=int --label-range=int]
         classification_evaluator.py     -v | --version
@@ -70,6 +74,7 @@ def _init_():
         -a --all-labels             recurrently eval on all labels mode
         -b --base-name              use basename of files in gt list
         -e --err-log                save error image json as /out-path/err.json
+        -l --loss                   set to choose cross-entropy computing mode
         ---------------------------------------------------------------------------------------------------
         --log-lv=str                logging level, one of INFO DEBUG WARNING ERROR CRITICAL [default: INFO]
         --gt=str                    groundtruth file list, required argument
@@ -342,6 +347,41 @@ def _generate_service_evaluation_result(file_result, precision, recall, top_1_er
     file_result.write('Recall: {}\n'.format(recall))
 
 
+def _calculate_ce(dict_log, dict_gt, false_sample_mask=False):
+    ce_list = list()
+    total, fsample, miss = 0, 0, 0
+    eps = 1e-16
+    for img in dict_log:
+        # key check
+        if img not in dict_gt:
+            # print 'image not found in groundtruth file'
+            miss += 1
+            continue
+        total += 1
+        # get image inference label
+        if type(dict_log[img]['Top-1 Index']) == list:
+            image_label = dict_log[img]['Top-1 Index'][0]
+        elif type(dict_log[image]['Top-1 Index']) == int:
+            image_label = dict_log[img]['Top-1 Index']
+        if image_label != dict_gt[img]:
+            fsample += 1
+            # eliminate false pos/neg samples
+            if false_sample_mask:   
+                continue
+
+        # calculate ce
+        num_cls = len(dict_log[img]['Confidence'])
+        y_quote = np.array([float(x) for x in dict_log[img]['Confidence']])
+        y = np.eye(num_cls)[dict_gt[img]]
+        assert y_quote.shape == y.shape, 'Failed matching shape of pred_labels and gt_labels'
+        ce_list.append(-sum(y*np.log(y_quote+eps)))
+    print('==> missing images:', miss)
+    print('==> false sample mask:', false_sample_mask)
+    print('==> false samples:', fsample)
+    print('==> top-1 error:{:.6f}'.format(float(fsample)/total))
+    print('==> cross entropy:{:.6f}'.format(sum(ce_list)/len(ce_list)))
+
+
 @_time_it.time_it
 def main():
     global POSITIVE
@@ -349,7 +389,11 @@ def main():
     file_log = open(args['<in-log>'], 'r')
     dict_log = json.load(file_log)
     err_log = os.path.join(args['<out-path>'], 'err_img.log') if args['--err-log'] else None
-    if args['--pos']:
+    if args['--loss']:
+        _calculate_ce(dict_log, dict_gt, false_sample_mask=True)
+        file_log.close()
+        return 0
+    elif args['--pos']:
         file_result = open(os.path.join(args['<out-path>'], str(POSITIVE), RESULT_FILE), 'w')
         POSITIVE = int(args['--pos'])
     # if args['--service']:
@@ -377,12 +421,13 @@ def main():
 
 
 def unit_test():
-    dict_gt = _read_list(args['--gt'])      # read groundtruth
-    logger.debug(dict_gt)
+    dict_gt = _read_list(args['--gt'], base_name=True)      # read groundtruth
+    # logger.debug(dict_gt)
     file_log = open(args['<in-log>'], 'r')
     dict_log = json.load(file_log)
     logger.debug('log successfully loaded')
-    _draw_confusion_matrix(dict_log, dict_gt, 0)
+    # _draw_confusion_matrix(dict_log, dict_gt, 0)
+    _calculate_ce(dict_log, dict_gt, false_sample_mask=True)
 
 
 if __name__ == '__main__':
@@ -391,6 +436,6 @@ if __name__ == '__main__':
         _init_.__doc__, version='mxnet training script {}'.format(version))
     _init_()
     logger.info('Start evaluation job...')
-    main()
-    # unit_test()
+    # main()
+    unit_test()
     logger.info('...done')
