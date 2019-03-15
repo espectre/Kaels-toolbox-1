@@ -8,7 +8,7 @@ Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun. "Identity Mappings in Deep Re
 '''
 import mxnet as mx
 
-def residual_unit(data, num_filter, stride, dim_match, name, bottle_neck=True, bn_mom=0.9, workspace=256, memonger=False):
+def dcn_residual_unit(data, num_filter, stride, dim_match, name, bottle_neck=True, bn_mom=0.9, workspace=256, memonger=False, dcn_switch=0, lr_mult=0.1):
     """Return ResNet Unit symbol for building ResNet
     Parameters
     ----------
@@ -35,7 +35,21 @@ def residual_unit(data, num_filter, stride, dim_match, name, bottle_neck=True, b
                                    no_bias=True, workspace=workspace, name=name + '_conv1')
         bn2 = mx.sym.BatchNorm(data=conv1, fix_gamma=False, eps=2e-5, momentum=bn_mom, name=name + '_bn2')
         act2 = mx.sym.Activation(data=bn2, act_type='relu', name=name + '_relu2')
-        conv2 = mx.sym.Convolution(data=act2, num_filter=int(num_filter*0.25), kernel=(3,3), stride=stride, pad=(1,1),
+        # ---- dcn ----
+        if dcn_switch: 
+            weight_var = mx.sym.Variable(name=name+'_conv2_offset_weight', init=mx.init.Zero(), lr_mult=lr_mult)
+            bias_var = mx.sym.Variable(name=name+'_conv2_offset_bias', init=mx.init.Zero(), lr_mult=lr_mult)
+            conv2_offset = mx.symbol.Convolution(name=name + '_conv2_offset', data=act2, num_filter=27,
+                       pad=(1, 1), kernel=(3, 3), stride=stride, weight=weight_var, bias=bias_var, lr_mult=lr_mult)
+            conv2_offset_t = mx.sym.slice_axis(conv2_offset, axis=1, begin=0, end=18)
+            conv2_mask =  mx.sym.slice_axis(conv2_offset, axis=1, begin=18, end=None)
+            conv2_mask = 2 * mx.sym.Activation(conv2_mask, act_type='sigmoid')
+            conv2 = mx.contrib.symbol.ModulatedDeformableConvolution(name=name + '_conv2', data=act2, offset=conv2_offset_t, mask=conv2_mask,
+                       num_filter=int(num_filter*0.25), pad=(1, 1), kernel=(3, 3), stride=stride,
+                       num_deformable_group=1, no_bias=True)
+        # -------------
+        else:
+            conv2 = mx.sym.Convolution(data=act2, num_filter=int(num_filter*0.25), kernel=(3,3), stride=stride, pad=(1,1),
                                    no_bias=True, workspace=workspace, name=name + '_conv2')
         bn3 = mx.sym.BatchNorm(data=conv2, fix_gamma=False, eps=2e-5, momentum=bn_mom, name=name + '_bn3')
         act3 = mx.sym.Activation(data=bn3, act_type='relu', name=name + '_relu3')
@@ -67,7 +81,7 @@ def residual_unit(data, num_filter, stride, dim_match, name, bottle_neck=True, b
             shortcut._set_attr(mirror_stage='True')
         return conv2 + shortcut
 
-def resnet(units, num_stages, filter_list, num_classes, image_shape, bottle_neck=True, bn_mom=0.9, workspace=256, memonger=False):
+def resnet(units, num_stages, filter_list, dcn_switch_list, num_classes, image_shape, bottle_neck=True, bn_mom=0.9, lr_mult=0.1, workspace=256, memonger=False):
     """Return ResNet symbol of
     Parameters
     ----------
@@ -101,12 +115,12 @@ def resnet(units, num_stages, filter_list, num_classes, image_shape, bottle_neck
         body = mx.symbol.Pooling(data=body, kernel=(3, 3), stride=(2,2), pad=(1,1), pool_type='max')
 
     for i in range(num_stages):
-        body = residual_unit(body, filter_list[i+1], (1 if i==0 else 2, 1 if i==0 else 2), False,
+        body = dcn_residual_unit(body, filter_list[i+1], (1 if i==0 else 2, 1 if i==0 else 2), False,
                              name='stage%d_unit%d' % (i + 1, 1), bottle_neck=bottle_neck, workspace=workspace,
-                             memonger=memonger)
+                             memonger=memonger, dcn_switch=dcn_switch_list[i+1], lr_mult=lr_mult)
         for j in range(units[i]-1):
-            body = residual_unit(body, filter_list[i+1], (1,1), True, name='stage%d_unit%d' % (i + 1, j + 2),
-                                 bottle_neck=bottle_neck, workspace=workspace, memonger=memonger)
+            body = dcn_residual_unit(body, filter_list[i+1], (1,1), True, name='stage%d_unit%d' % (i + 1, j + 2),
+                                 bottle_neck=bottle_neck, workspace=workspace, memonger=memonger, dcn_switch=dcn_switch_list[i+1], lr_mult=lr_mult)
     bn1 = mx.sym.BatchNorm(data=body, fix_gamma=False, eps=2e-5, momentum=bn_mom, name='bn1')
     relu1 = mx.sym.Activation(data=bn1, act_type='relu', name='relu1')
     # Although kernel is not used here when global_pool=True, we should put one
@@ -115,7 +129,7 @@ def resnet(units, num_stages, filter_list, num_classes, image_shape, bottle_neck
     fc1 = mx.symbol.FullyConnected(data=flat, num_hidden=num_classes, name='fc1')
     return mx.symbol.SoftmaxOutput(data=fc1, name='softmax')
 
-def get_symbol(num_classes, num_layers, image_shape, conv_workspace=256, **kwargs):
+def get_symbol(num_classes, num_layers, image_shape, conv_workspace=256, dcn_switch_list=[0,0,0,0,0], lr_mult=0.1, **kwargs):
     """
     Adapted from https://github.com/tornadomeet/ResNet/blob/master/train_resnet.py
     Original author Wei Wu
@@ -136,6 +150,7 @@ def get_symbol(num_classes, num_layers, image_shape, conv_workspace=256, **kwarg
             raise ValueError("no experiments done on num_layers {}, you can do it yourself".format(num_layers))
         units = per_unit * num_stages
     else:
+        dcn_switch_list = dcn_switch_list 
         if num_layers >= 50:
             filter_list = [64, 256, 512, 1024, 2048]
             bottle_neck = True
@@ -163,7 +178,15 @@ def get_symbol(num_classes, num_layers, image_shape, conv_workspace=256, **kwarg
     return resnet(units       = units,
                   num_stages  = num_stages,
                   filter_list = filter_list,
+                  dcn_switch_list = dcn_switch_list,
+                  lr_mult = lr_mult,
                   num_classes = num_classes,
                   image_shape = image_shape,
                   bottle_neck = bottle_neck,
                   workspace   = conv_workspace)
+
+if __name__ == '__main__':
+    sym = get_symbol(1000, 101, (3,224,224), conv_workspace=256, dcn_switch_list=[0,0,1,1,1], lr_mult=0.05)
+    sym.save('dummy-symbol.json')
+    print('Symbol: R101-v2-dcn successfully generated as dummy-symbol.json')
+    
