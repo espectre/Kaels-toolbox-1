@@ -58,7 +58,11 @@ class DummyDataset(pth_data.dataset.Dataset):
         # Get image name from the pandas df
         single_image_path = self.image_arr[index]
         # Open image
-        img_as_img = Image.open(single_image_path)
+        try:
+            img_as_img = Image.open(single_image_path)
+        except:
+            logging.error("Image error encountered: {}".format(os.path.basename(single_image_path)))
+            return None
         if img_as_img.mode != "RGB":
             # print(img_as_img.mode)
             img_as_img = img_as_img.convert("RGB")
@@ -165,6 +169,14 @@ def compose_transform_list(cfg_obj):
     return result
 
 
+def _collate_wrapper(batch):
+    """
+        Puts each data field into a tensor with outer dimension batch size
+    """
+    batch = filter(lambda x:x is not None, batch)
+    return pth_data.dataloader.default_collate(batch)
+
+
 def inst_data_loader(data_train, data_dev, train_batch_size, dev_batch_size, test_only=False):
     if test_only:   # test mode
         trans = {
@@ -201,8 +213,10 @@ def inst_data_loader(data_train, data_dev, train_batch_size, dev_batch_size, tes
         dataset_dev = DummyDataset(data_dev, trans['dev'], img_path_prefix=cfg.TRAIN.DEV_IMG_PREFIX)  
 
         data_loader = {
-        'train': pth_data.DataLoader(dataset=dataset_train, batch_size=train_batch_size, shuffle=cfg.TRAIN.SHUFFLE, num_workers=cfg.TRAIN.PROCESS_THREAD),
-        'dev': pth_data.DataLoader(dataset=dataset_dev, batch_size=dev_batch_size, shuffle=False, num_workers=cfg.TRAIN.PROCESS_THREAD)
+        # 'train': pth_data.DataLoader(dataset=dataset_train, batch_size=train_batch_size, shuffle=cfg.TRAIN.SHUFFLE, num_workers=cfg.TRAIN.PROCESS_THREAD),
+        # 'dev': pth_data.DataLoader(dataset=dataset_dev, batch_size=dev_batch_size, shuffle=False, num_workers=cfg.TRAIN.PROCESS_THREAD)
+        'train': pth_data.DataLoader(dataset=dataset_train, batch_size=train_batch_size, shuffle=cfg.TRAIN.SHUFFLE, num_workers=cfg.TRAIN.PROCESS_THREAD, collate_fn=_collate_wrapper),
+        'dev': pth_data.DataLoader(dataset=dataset_dev, batch_size=dev_batch_size, shuffle=False, num_workers=cfg.TRAIN.PROCESS_THREAD, collate_fn=_collate_wrapper)
         }
 
         data_size = {'train': len(dataset_train), 'dev': len(dataset_dev)}

@@ -31,11 +31,12 @@ fhandler = None     # log to file
 def _init_():
     '''
     Training script for image-classification task on mxnet
-    Update: 2018-11-08
+    Update: 2019-04-08
     Author: @Northrend
     Contributor:
 
     Changelog:
+    2019/04/08      v2.2              fix crashing caused by loading image error
     2018/11/08      v2.1              fix pre-eval batch size bug
     2018/11/05      v2.0              support lr fixed decay step
     2018/10/29      v1.9              fix PIL loading bug 
