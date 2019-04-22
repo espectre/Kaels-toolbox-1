@@ -159,33 +159,37 @@ def inst_iterators(data_train, data_dev, batch_size=1, data_shape=(3,224,224), r
                 std                 = np.asarray(std),
                 inter_method        = cfg.TRAIN.INTERPOLATION_METHOD
                 )
-                
-        train = mx.image.ImageIter(
-                dtype               = cfg.TRAIN.DATA_TYPE,
-                path_imglist        = data_train,
-                data_name           = 'data',
-                label_name          = label_name,
-                label_width         = cfg.TRAIN.LABEL_WIDTH,
-                data_shape          = data_shape,
-                batch_size          = batch_size,
-                path_root           = cfg.TRAIN.TRAIN_IMG_PREFIX,
-                shuffle             = cfg.TRAIN.SHUFFLE,
-                last_batch_handle   = cfg.TRAIN.LAST_BATCH_HANDLE,
-                aug_list            = aug_list_train
-                )
-        dev = mx.image.ImageIter(
-                dtype               = cfg.TRAIN.DATA_TYPE,
-                path_imglist        = data_dev,
-                data_name           = 'data',
-                label_name          = label_name,
-                label_width         = cfg.TRAIN.LABEL_WIDTH,
-                data_shape          = data_shape,
-                batch_size          = batch_size,
-                path_root           = cfg.TRAIN.DEV_IMG_PREFIX,
-                shuffle             = cfg.TRAIN.SHUFFLE,
-                last_batch_handle   = cfg.TRAIN.LAST_BATCH_HANDLE,
-                aug_list            = aug_list_dev
-                )
+        
+        try:        
+            train = mx.image.ImageIter(
+                    dtype               = cfg.TRAIN.DATA_TYPE,
+                    path_imglist        = data_train,
+                    data_name           = 'data',
+                    label_name          = label_name,
+                    label_width         = cfg.TRAIN.LABEL_WIDTH,
+                    data_shape          = data_shape,
+                    batch_size          = batch_size,
+                    path_root           = cfg.TRAIN.TRAIN_IMG_PREFIX,
+                    shuffle             = cfg.TRAIN.SHUFFLE,
+                    last_batch_handle   = cfg.TRAIN.LAST_BATCH_HANDLE,
+                    aug_list            = aug_list_train
+                    )
+            dev = mx.image.ImageIter(
+                    dtype               = cfg.TRAIN.DATA_TYPE,
+                    path_imglist        = data_dev,
+                    data_name           = 'data',
+                    label_name          = label_name,
+                    label_width         = cfg.TRAIN.LABEL_WIDTH,
+                    data_shape          = data_shape,
+                    batch_size          = batch_size,
+                    path_root           = cfg.TRAIN.DEV_IMG_PREFIX,
+                    shuffle             = cfg.TRAIN.SHUFFLE,
+                    last_batch_handle   = cfg.TRAIN.LAST_BATCH_HANDLE,
+                    aug_list            = aug_list_dev
+                    )
+        except:
+            print("!!!!!!!!!!!!!!!!!!!!!!!!")
+
 
     elif cfg.TRAIN.USE_DALI and cfg.TRAIN.USE_REC:
         from dali_util import HybridTrainPipe, HybridValPipe

@@ -202,13 +202,14 @@ __C.TRAIN.R_INTERPOLATION = 2
 __C.TRAIN.SHUFFLE = True 
 
 # ---- optimizer hyper params ----
-__C.TRAIN.OPTIMIZER = b"sgd"
+__C.TRAIN.OPTIMIZER = b"SGD"
 __C.TRAIN.BASE_LR = 0.1
 __C.TRAIN.LR_FACTOR = 0.1
 __C.TRAIN.FIXED_STEP = False 
 __C.TRAIN.STEP_EPOCHS = list() 
 __C.TRAIN.WEIGHT_DECAY = 0.0005
 __C.TRAIN.MOMENTUM = 0.9
+__C.TRAIN.RMSPROP_ALPHA = 0.9
 
 # ---- classfier hyper params ----
 __C.TRAIN.NUM_CLASSES = 1000 

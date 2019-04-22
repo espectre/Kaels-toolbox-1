@@ -129,7 +129,13 @@ def main():
 
     criterion = torch.nn.CrossEntropyLoss()
     criterion.cuda()
-    optimizer = torch.optim.SGD(model.parameters(), lr=cfg.BASE_LR, momentum=cfg.MOMENTUM, weight_decay=cfg.WEIGHT_DECAY)
+    if cfg.OPTIMIZER == "SGD":
+        optimizer = torch.optim.SGD(model.parameters(), lr=cfg.BASE_LR, momentum=cfg.MOMENTUM, weight_decay=cfg.WEIGHT_DECAY)
+    elif cfg.OPTIMIZER == "RMSPROP":
+        optimizer = torch.optim.RMSprop(model.parameters(), lr=cfg.BASE_LR, alpha=cfg.RMSPROP_ALPHA, momentum=cfg.MOMENTUM, weight_decay=cfg.WEIGHT_DECAY, centered=False)
+    else:
+        logger.error("Invalid optimizer type")
+        return 0
 
     if cfg.USE_GPU:
         torch.backends.cudnn.benchmark = True
@@ -139,6 +145,7 @@ def main():
     data_loader, data_size = inst_data_loader(cfg.TRAIN_LST, cfg.DEV_LST, train_batch_size, dev_batch_size)
     logger.info("Start training:")
     generic_train(data_loader, data_size, model, criterion, optimizer, lr_scheduler, max_epoch=cfg.MAX_EPOCHS, pre_eval=cfg.PRE_EVALUATION) 
+    return 0
 
 
 if __name__ == '__main__':
