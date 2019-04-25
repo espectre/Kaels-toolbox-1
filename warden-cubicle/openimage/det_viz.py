@@ -12,6 +12,7 @@ from openimage import load_categories
 from image import box_viz
 
 GT = False    # set True to viz gt
+THRESHOLD = 0.5
 
 def convert_coco_anns(raw):
     result = dict()
@@ -31,7 +32,6 @@ def main():
     '''
     :params: /path/to/image/list /path/to/input/json /path/to/save/dir/ /path/to/catrgory/file /path/to/image/prefix [optinal]/path/to/alias/file
     '''
-    threshold = 0.000000001
     cats = load_categories(sys.argv[4]) 
     class_names = cats
     if len(sys.argv) == 7:
@@ -60,7 +60,7 @@ def main():
                 for det in dets:
                     det[-1] = alias[det[-1]]
             save_path = os.path.join(sys.argv[3], 'DET_'+img)
-            box_viz(os.path.join(sys.argv[5],img), dets, pixel_means, class_names, threshold=threshold, save_path=save_path, transform=True, dpi=80, coor_scale=1.0) 
+            box_viz(os.path.join(sys.argv[5],img), dets, pixel_means, class_names, threshold=THRESHOLD, save_path=save_path, transform=True, dpi=80, coor_scale=1.0) 
             print('Image[{}] {} saved'.format(index+1, save_path))
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ class ImgErr(RuntimeError):
         self.msg = msg
 
 SILENT_MODE = True  # set to NOT print error image path
-CLEAN_MODE = True  # DANGEROUS, set to delete error images simultaneously
+CLEAN_MODE =  False  # DANGEROUS, set to delete error images simultaneously
 invalid_list = multiprocessing.Manager().list()
 
 
