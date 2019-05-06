@@ -25,14 +25,13 @@ def _init_():
     2018/07/25      v1.0                basic functions
 
     Usage:
-        qhash_proxy.py                  <domain> [-u|--update] [-c|--clear]
+        domain_pop.py                   <domain> [-u|--update] [-c|--clear]
                                         [--login=str] [--qshell-path=str]         
-        qhash_proxy.py                  -v|--version
-        qhash_proxy.py                  -h|--help
+        domain_pop.py                   -v|--version
+        domain_pop.py                   -h|--help
 
     Arguments:
-        <infile>                        input file list
-        <thread-number>                 number of processing thread
+        <domain>                        target domain
 
     Options:
         -h --help                       show this screen
@@ -54,7 +53,7 @@ CACHE = '.bd_map'   # path to save cache file
 
 def check_qshell(qsh_path):
     '''
-        Check qshell runing
+    Check qshell runing
     '''
     print('=> checking dependencies...')
     if not os.path.exists(qsh_path):

@@ -58,7 +58,7 @@ def _init_():
                                         [-s|--service] [-c|--conf-mat] [-a|--all-labels] 
                                         [-e|--err-log] [-b|--base-name] [-l|--loss]
                                         [--log-lv=str --pos=int --label=str --nrop]
-                                        [--top-k=int --label-range=int]
+                                        [--top-k=int --label-range=int --fmask]
         classification_evaluator.py     -v | --version
         classification_evaluator.py     -h | --help
 
@@ -80,7 +80,8 @@ def _init_():
         --gt=str                    groundtruth file list, required argument
         --pos=int                   set positive label index, will be disabled under all-label mode
         --label-range=int           number of labels, will be used under all-label mode
-        --nrop                      set nrop flag to convert nrop logs
+        --fmask                     set True to eliminate false samples under calculate ce mode 
+        --nrop                      set True to convert nrop logs
         --label=str                 path to index2label file
         --top-k=int                 top k in log [default: 1]
     '''
@@ -390,7 +391,7 @@ def main():
     dict_log = json.load(file_log)
     err_log = os.path.join(args['<out-path>'], 'err_img.log') if args['--err-log'] else None
     if args['--loss']:
-        _calculate_ce(dict_log, dict_gt, false_sample_mask=True)
+        _calculate_ce(dict_log, dict_gt, false_sample_mask=args['--fmask'])
         file_log.close()
         return 0
     elif args['--pos']:
@@ -436,6 +437,6 @@ if __name__ == '__main__':
         _init_.__doc__, version='mxnet training script {}'.format(version))
     _init_()
     logger.info('Start evaluation job...')
-    # main()
-    unit_test()
+    main()
+    # unit_test()
     logger.info('...done')
